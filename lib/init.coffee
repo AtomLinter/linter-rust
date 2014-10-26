@@ -1,6 +1,9 @@
 module.exports =
-  configDefaults:
-    'Executable path': null
+  config:
+    executablePath:
+      type: 'string'
+      default: 'rustc'
+      description: 'Path to rust compiller.'
 
   activate: ->
     console.log 'Linter-Rust: package loaded,
