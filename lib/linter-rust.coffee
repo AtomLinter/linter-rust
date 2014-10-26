@@ -39,9 +39,7 @@ class LinterRust extends Linter
 
   lintFile: (filePath, callback) =>
     if @enabled
-      super filePath, callback
-    else
-      @processMessage "", callback
+      super(filePath, callback)
 
   formatMessage: (match) ->
     type = if match.error then match.error else match.warning
