@@ -1,6 +1,7 @@
 # linter-rust
 
-This package will lint your opened Rust-files in Atom, using [rustc](http://www.rust-lang.org).
+This package will lint your Rust-files in Atom, using [rustc](http://www.rust-lang.org).
+Files will be checked when you open or save them.
 
 ## Installation
 

@@ -3,6 +3,7 @@ Linter = require "#{linterPath}/lib/linter"
 
 {exec} = require 'child_process'
 {log, warn} = require "#{linterPath}/lib/utils"
+path = require 'path'
 
 
 class LinterRust extends Linter
@@ -37,7 +38,8 @@ class LinterRust extends Linter
 
   lintFile: (filePath, callback) =>
     if @enabled
-      super(filePath, callback)
+      origin_file = path.basename @editor.getPath()
+      super(origin_file, callback)
 
   formatMessage: (match) ->
     type = if match.error then match.error else match.warning
