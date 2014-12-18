@@ -9,6 +9,8 @@ path = require 'path'
 class LinterRust extends Linter
   @enable: false
   @syntax: 'source.rust'
+  @cargoPath: 'cargo'
+  @cargoManifestPath: null
   linterName: 'rust'
   errorStream: 'stderr'
   regex: '^(.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)):\\s+(?<message>.+)\n'
@@ -18,6 +20,8 @@ class LinterRust extends Linter
     atom.config.observe 'linter-rust.executablePath', =>
       @executablePath = atom.config.get 'linter-rust.executablePath'
       exec "#{@executablePath} --version", @executionCheckHandler
+    atom.config.observe 'linter-rust.executablePath2', =>
+      @cargoPath = atom.config.get 'linter-rust.executablePath2'
 
   executionCheckHandler: (error, stdout, stderr) =>
     versionRegEx = /(rustc|cargo) ([\d\.]+)/
@@ -29,41 +33,46 @@ class LinterRust extends Linter
       \"#{result}\". Please, check executable path in the linter settings."
     else
       @enabled = true
-      # log "Linter-Rust: found rust " + versionRegEx.exec(stdout)[1]
       log "Linter-Rust: found " + stdout
       log 'Linter-Rust: initialization completed'
 
   initCmd: (editing_file) =>
-    # @cmd = "#{@executablePath} --no-trans --color never"
-    # @cmd = "#{@executablePath} build --manifest-path"
+    # search for Cargo.toml in container directoies
     dir = path.dirname editing_file
-    cargofile = findFile(dir, "Cargo.toml")
-    log("find cargofile: ", cargofile)
-    if cargofile
-      @cwd = path.dirname cargofile
-      @cmd = "cargo build --verbose"
+    @cargoManifestPath = findFile(dir, "Cargo.toml")
+    if @cargoManifestPath
+      log "found Cargo.toml: #{@cargoManifestPath}"
+      @cmd = "cargo build"
+      @cwd = path.dirname @cargoManifestPath
     else
-      @cwd = path.dirname editing_file
       @cmd = "rustc --no-trans --color never"
+      @cwd = path.dirname editing_file
 
   lintFile: (filePath, callback) =>
     if not @enabled
       return
-    # filePath is in tmp dir, not the real one user is editing
+    # filePath is in tmp dir, not the real one that user is editing
     editing_file = @editor.getPath()
-    log("lintFile", editing_file)
     @initCmd editing_file
-    super(editing_file, callback)
+    if @cargoManifestPath
+      super(editing_file, callback)
+    else
+      super(filePath, callback)
 
   beforeSpawnProcess: (command, args, options) =>
-    {
-      command: "cargo",  # will be configable as executablePath2?
-      args: args[0..-2], # remove the last .rs file, we only need Cargo.toml
-      options: options   # keep it as is
-    }
+    # is there a Cargo.toml file?
+    if @cargoManifestPath
+      return {
+        command: @cargoPath, # we build package using cargo
+        args: args[0..-2],   # remove the last .rs file that Linter always appends
+        options: options     # keep it as is
+      }
+    else
+      # we compile .rs file using rustc
+      return { command: command, args: args, options:options }
 
   formatMessage: (match) ->
     type = if match.error then match.error else match.warning
-    "#{type} #{match.message}"
+    "#{type}: #{match.message}"
 
 module.exports = LinterRust
