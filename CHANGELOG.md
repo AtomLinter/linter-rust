@@ -1,3 +1,6 @@
+# 0.1.0
+Now we support Cargo!
+
 # 0.0.3
 Check original file, not a tmp copy. See #1.
 
