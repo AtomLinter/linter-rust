@@ -11,7 +11,7 @@ class LinterRust extends Linter
   @syntax: 'source.rust'
   linterName: 'rust'
   errorStream: 'stderr'
-  regex: '(.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)):\\s+(?<message>.+)\n'
+  regex: '(.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n'
 
   constructor: (@editor) ->
     super @editor
@@ -42,7 +42,7 @@ class LinterRust extends Linter
       super(origin_file, callback)
 
   formatMessage: (match) ->
-    type = if match.error then match.error else match.warning
-    "#{type} #{match.message}"
+    type = if match.error then match.error else if match.warning then match.warning else match.info
+    "#{type}: #{match.message}"
 
 module.exports = LinterRust
