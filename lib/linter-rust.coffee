@@ -45,7 +45,7 @@ class LinterRust extends Linter
       @cmd = "cargo build"
       @cwd = path.dirname @cargoManifestPath
     else
-      @cmd = "rustc --no-trans --color never"
+      @cmd = "rustc -Z no-trans --color never"
       @cwd = path.dirname editing_file
 
   lintFile: (filePath, callback) =>
