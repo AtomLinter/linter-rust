@@ -1,3 +1,6 @@
+# 0.0.5
+Add info support. See #7.
+
 # 0.0.4
 Correct regex string. See #6.
 
