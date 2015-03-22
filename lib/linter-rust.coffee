@@ -33,7 +33,7 @@ class LinterRust extends Linter
       do @initCmd
 
   initCmd: =>
-    @cmd = "#{@executablePath} --no-trans --color never"
+    @cmd = "#{@executablePath} -Z no-trans --color never"
     log 'Linter-Rust: initialization completed'
 
   lintFile: (filePath, callback) =>
