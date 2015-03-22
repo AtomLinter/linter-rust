@@ -38,8 +38,8 @@ class LinterRust extends Linter
 
   lintFile: (filePath, callback) =>
     if @enabled
-      origin_file = path.basename @editor.getPath()
-      super(origin_file, callback)
+      origin_file = path.basename do @editor.getPath
+      super origin_file, callback
 
   formatMessage: (match) ->
     type = if match.error then match.error else if match.warning then match.warning else match.info
