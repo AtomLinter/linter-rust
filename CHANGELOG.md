@@ -1,3 +1,6 @@
+# 0.0.6
+Fix rustc command-line options
+
 # 0.0.5
 Add info support. See #7.
 
