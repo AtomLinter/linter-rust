@@ -1,3 +1,6 @@
+# 0.0.7
+Fix uncaught error 'ENOENT'. See #3 and AtomLinter/Linter#330
+
 # 0.0.6
 Fix rustc command-line options
 
