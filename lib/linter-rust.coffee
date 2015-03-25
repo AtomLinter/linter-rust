@@ -10,10 +10,10 @@ path = require 'path'
 class LinterRust extends Linter
   @enabled: false
   @syntax: 'source.rust'
-  @rustcPath: ''
+  rustcPath: ''
   linterName: 'rust'
   errorStream: 'stderr'
-  regex: '(.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n'
+  regex: '(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n'
 
   constructor: (@editor) ->
     super @editor
@@ -48,8 +48,8 @@ class LinterRust extends Linter
 
   formatMessage: (match) ->
     type = if match.error then match.error else if match.warning then match.warning else match.info
-    if match[1] != path.basename do @editor.getPath
-      "#{type} in #{match[1]}: #{match.message}"
+    if match.file != path.basename do @editor.getPath
+      "#{type} in #{match.file}: #{match.message}"
     else
       "#{type}: #{match.message}"
 
