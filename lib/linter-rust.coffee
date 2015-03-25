@@ -48,6 +48,9 @@ class LinterRust extends Linter
 
   formatMessage: (match) ->
     type = if match.error then match.error else if match.warning then match.warning else match.info
-    "#{type}: #{match.message}"
+    if match[1] != path.basename do @editor.getPath
+      "#{type} in #{match[1]}: #{match.message}"
+    else
+      "#{type}: #{match.message}"
 
 module.exports = LinterRust
