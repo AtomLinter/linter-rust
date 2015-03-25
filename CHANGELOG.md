@@ -1,3 +1,6 @@
+# 0.0.8
+Show file name where an error occurred.
+
 # 0.0.7
 Fix uncaught error 'ENOENT'. See #3 and AtomLinter/Linter#330
 
