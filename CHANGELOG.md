@@ -1,3 +1,6 @@
+# 0.0.9
+Fix spaces problem in the executable path. Closes #3
+
 # 0.0.8
 Show file name where an error occurred.
 
