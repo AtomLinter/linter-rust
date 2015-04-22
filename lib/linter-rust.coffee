@@ -22,7 +22,7 @@ class LinterRust extends Linter
       if rustcPath != @rustcPath
         @enabled = false
         @rustcPath = rustcPath
-        exec "#{@rustcPath} --version", @executionCheckHandler
+        exec "\"#{@rustcPath}\" --version", @executionCheckHandler
 
   executionCheckHandler: (error, stdout, stderr) =>
     versionRegEx = /rustc ([\d\.]+)/
@@ -38,7 +38,7 @@ class LinterRust extends Linter
       do @initCmd
 
   initCmd: =>
-    @cmd = "#{@rustcPath} -Z no-trans --color never"
+    @cmd = [@rustcPath, '-Z', 'no-trans', '--color', 'never']
     log 'Linter-Rust: initialization completed'
 
   lintFile: (filePath, callback) =>
