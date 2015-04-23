@@ -50,8 +50,8 @@ class LinterRust extends Linter
 
   lintFile: (filePath, callback) =>
     if @enabled
-      @filePath = path.basename do @editor.getPath
-      super @filePath, callback
+      origin_file = path.basename do @editor.getPath
+      super origin_file, callback
 
   locateCargo: ->
     directory = path.resolve path.dirname do @editor.getPath
