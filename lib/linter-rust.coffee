@@ -14,6 +14,8 @@ class LinterRust extends Linter
   linterName: 'rust'
   errorStream: 'stderr'
   regex: '(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n'
+  cargoFilename: "Cargo.toml"
+  dependencyDir: "target/debug/deps"
 
   constructor: (@editor) ->
     super @editor
@@ -39,12 +41,28 @@ class LinterRust extends Linter
 
   initCmd: =>
     @cmd = [@rustcPath, '-Z', 'no-trans', '--color', 'never']
+    cargoPath = do @locateCargo
+    if cargoPath
+      @cmd.push '-L'
+      @cmd.push cargoPath + '/' + @dependencyDir
+
     log 'Linter-Rust: initialization completed'
 
   lintFile: (filePath, callback) =>
     if @enabled
-      origin_file = path.basename do @editor.getPath
-      super origin_file, callback
+      @filePath = path.basename do @editor.getPath
+      super @filePath, callback
+
+  locateCargo: ->
+    directory = path.resolve path.dirname do @editor.getPath
+    loop
+      cargoFile = directory + '/' + @cargoFilename
+      return directory if fs.existsSync cargoFile
+
+      break if directory == '/'
+      directory = path.resolve path.join(directory, '..')
+
+    return false
 
   formatMessage: (match) ->
     type = if match.error then match.error else if match.warning then match.warning else match.info
