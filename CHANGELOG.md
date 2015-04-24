@@ -1,3 +1,6 @@
+# 0.0.10
+Extern crate problem fix. See PR #9.
+
 # 0.0.9
 Fix spaces problem in the executable path. Closes #3
 
