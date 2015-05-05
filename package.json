@@ -1,7 +1,6 @@
 {
   "name": "linter-rust",
   "linter-package": true,
-  "activationEvents": [],
   "main": "./lib/init",
   "version": "0.0.10",
   "description": "Lint Rust on the fly, using rustc",
