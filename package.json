@@ -2,7 +2,7 @@
   "name": "linter-rust",
   "linter-package": true,
   "main": "./lib/init",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Lint Rust on the fly, using rustc",
   "repository": "https://github.com/AtomLinter/linter-rust",
   "license": "MIT",
