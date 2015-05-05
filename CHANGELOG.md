@@ -1,3 +1,6 @@
+# 0.0.11
+Fix deprecated activationEvents. Closes #10
+
 # 0.0.10
 Extern crate problem fix. See PR #9.
 
