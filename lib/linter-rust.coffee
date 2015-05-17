@@ -14,7 +14,7 @@ class LinterRust extends Linter
   linterName: 'rust'
   errorStream: 'stderr'
   regex: '(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n'
-  cargoFilename: "Cargo.toml"
+  cargoFilename: ''
   dependencyDir: "target/debug/deps"
 
   constructor: (@editor) ->
@@ -25,6 +25,8 @@ class LinterRust extends Linter
         @enabled = false
         @rustcPath = rustcPath
         exec "\"#{@rustcPath}\" --version", @executionCheckHandler
+    atom.config.observe 'linter-rust.cargoFilename', =>
+      @cargoFilename = atom.config.get 'linter-rust.cargoFilename'
 
   executionCheckHandler: (error, stdout, stderr) =>
     versionRegEx = /rustc ([\d\.]+)/

@@ -4,6 +4,10 @@ module.exports =
       type: 'string'
       default: 'rustc'
       description: 'Path to rust compiller.'
+    cargoFilename:
+      type: 'string'
+      default: 'Cargo.toml'
+      description: 'Cargo configuration file.'
 
   activate: ->
     console.log 'Linter-Rust: package loaded,
