@@ -1,3 +1,6 @@
+# 0.0.12
+Fix #11
+
 # 0.0.11
 Fix deprecated activationEvents. Closes #10
 
