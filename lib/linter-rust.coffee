@@ -46,7 +46,7 @@ class LinterRust extends Linter
     cargoPath = do @locateCargo
     if cargoPath
       @cmd.push '-L'
-      @cmd.push cargoPath + '/' + @dependencyDir
+      @cmd.push path.join cargoPath, @dependencyDir
 
     log 'Linter-Rust: initialization completed'
 
@@ -57,12 +57,13 @@ class LinterRust extends Linter
 
   locateCargo: ->
     directory = path.resolve path.dirname do @editor.getPath
+    root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
     loop
-      cargoFile = directory + '/' + @cargoFilename
+      cargoFile = path.join directory, @cargoFilename
       return directory if fs.existsSync cargoFile
 
-      break if directory == '/'
-      directory = path.resolve path.join(directory, '..')
+      break if root_dir.test directory
+      directory = path.resolve path.join directory, '..'
 
     return false
 
