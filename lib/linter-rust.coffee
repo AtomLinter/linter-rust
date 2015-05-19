@@ -2,7 +2,7 @@ linterPath = atom.packages.getLoadedPackage("linter").path
 Linter = require "#{linterPath}/lib/linter"
 
 {exec} = require 'child_process'
-{log, warn} = require "#{linterPath}/lib/utils"
+{log, warn, findFile} = require "#{linterPath}/lib/utils"
 fs = require 'fs'
 path = require 'path'
 tmp = require('tmp')
@@ -15,7 +15,7 @@ class LinterRust extends Linter
   linterName: 'rust'
   errorStream: 'stderr'
   regex: '(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n'
-  cargoFilename: ''
+  cargoManifestFilename: ''
   dependencyDir: "target/debug/deps"
   tmpFile: null
   lintOnChange: false
@@ -29,8 +29,8 @@ class LinterRust extends Linter
         @enabled = false
         @rustcPath = rustcPath
         exec "\"#{@rustcPath}\" --version", @executionCheckHandler
-    atom.config.observe 'linter-rust.cargoFilename', =>
-      @cargoFilename = atom.config.get 'linter-rust.cargoFilename'
+    atom.config.observe 'linter-rust.cargoManifestFilename', =>
+      @cargoManifestFilename = atom.config.get 'linter-rust.cargoMainifestFilename'
     atom.config.observe 'linter-rust.lintOnChange', =>
       @lintOnChange = atom.config.get 'linter-rust.lintOnChange'
 
@@ -51,7 +51,7 @@ class LinterRust extends Linter
 
   initCmd: =>
     @cmd = [@rustcPath, '-Z', 'no-trans', '--color', 'never']
-    cargoPath = do @locateCargo
+    cargoPath = do @locateCargoManifest
     if cargoPath
       @cmd.push '-L'
       @cmd.push path.join cargoPath, @dependencyDir
@@ -70,17 +70,10 @@ class LinterRust extends Linter
         super fileName, callback
 
 
-  locateCargo: ->
-    directory = path.resolve path.dirname do @editor.getPath
-    root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
-    loop
-      cargoFile = path.join directory, @cargoFilename
-      return directory if fs.existsSync cargoFile
+  locateCargoManifest: ->
+    cur_dir = path.resolve path.dirname do @editor.getPath
+    return findFile(cur_dir, @cargoManifestFilename)
 
-      break if root_dir.test directory
-      directory = path.resolve path.join directory, '..'
-
-    return false
 
   processMessage: (message, callback) ->
     if @tmpFile

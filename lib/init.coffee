@@ -3,15 +3,15 @@ module.exports =
     executablePath:
       type: 'string'
       default: 'rustc'
-      description: 'Path to rust compiller.'
-    cargoFilename:
+      description: 'Path to rust compiller'
+    cargoManifestFilename:
       type: 'string'
       default: 'Cargo.toml'
-      description: 'Cargo configuration file.'
+      description: 'Cargo manifest filename'
     lintOnChange:
       type: 'boolean'
       default: true
-      description: 'Lint file on change (experimental).'
+      description: 'Lint file on change (experimental)'
 
   activate: ->
     console.log 'Linter-Rust: package loaded,
