@@ -5,6 +5,7 @@ Linter = require "#{linterPath}/lib/linter"
 {log, warn} = require "#{linterPath}/lib/utils"
 fs = require 'fs'
 path = require 'path'
+tmp = require('tmp')
 
 
 class LinterRust extends Linter
@@ -16,6 +17,9 @@ class LinterRust extends Linter
   regex: '(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n'
   cargoFilename: ''
   dependencyDir: "target/debug/deps"
+  tmpFile: null
+  lintOnChange: false
+
 
   constructor: (@editor) ->
     super @editor
@@ -27,6 +31,9 @@ class LinterRust extends Linter
         exec "\"#{@rustcPath}\" --version", @executionCheckHandler
     atom.config.observe 'linter-rust.cargoFilename', =>
       @cargoFilename = atom.config.get 'linter-rust.cargoFilename'
+    atom.config.observe 'linter-rust.lintOnChange', =>
+      @lintOnChange = atom.config.get 'linter-rust.lintOnChange'
+
 
   executionCheckHandler: (error, stdout, stderr) =>
     versionRegEx = /rustc ([\d\.]+)/
@@ -41,19 +48,27 @@ class LinterRust extends Linter
       log "Linter-Rust: found rust " + versionRegEx.exec(stdout)[1]
       do @initCmd
 
+
   initCmd: =>
     @cmd = [@rustcPath, '-Z', 'no-trans', '--color', 'never']
     cargoPath = do @locateCargo
     if cargoPath
       @cmd.push '-L'
       @cmd.push path.join cargoPath, @dependencyDir
-
     log 'Linter-Rust: initialization completed'
+
 
   lintFile: (filePath, callback) =>
     if @enabled
-      origin_file = path.basename do @editor.getPath
-      super origin_file, callback
+      fileName = path.basename do @editor.getPath
+      if @lintOnChange
+        cur_dir = path.dirname do @editor.getPath
+        @tmpFile = tmp.fileSync {dir: cur_dir, postfix: "-#{fileName}"}
+        fs.writeFileSync @tmpFile.name, @editor.getText()
+        super @tmpFile.name, callback
+      else
+        super fileName, callback
+
 
   locateCargo: ->
     directory = path.resolve path.dirname do @editor.getPath
@@ -67,11 +82,21 @@ class LinterRust extends Linter
 
     return false
 
+  processMessage: (message, callback) ->
+    if @tmpFile
+      @tmpFile.removeCallback()
+      @tmpFile = null
+    super message, callback
+
+
   formatMessage: (match) ->
+    fileName = path.basename do @editor.getPath
+    fileNameRE = RegExp "-#{fileName}$"
     type = if match.error then match.error else if match.warning then match.warning else match.info
-    if match.file != path.basename do @editor.getPath
-      "#{type} in #{match.file}: #{match.message}"
-    else
+    if fileNameRE.test(match.file) or fileName == match.file
       "#{type}: #{match.message}"
+    else
+      "#{type} in #{match.file}: #{match.message}"
+
 
 module.exports = LinterRust

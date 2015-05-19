@@ -8,6 +8,10 @@ module.exports =
       type: 'string'
       default: 'Cargo.toml'
       description: 'Cargo configuration file.'
+    lintOnChange:
+      type: 'boolean'
+      default: true
+      description: 'Lint file on change (experimental).'
 
   activate: ->
     console.log 'Linter-Rust: package loaded,

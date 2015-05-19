@@ -1,3 +1,6 @@
+# 0.0.13
+Added linting on the fly (experimental).
+
 # 0.0.12
 Fix #11
 
