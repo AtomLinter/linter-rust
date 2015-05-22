@@ -3,13 +3,11 @@
   "linter-package": true,
   "main": "./lib/init",
   "version": "0.0.13",
-  "description": "Lint Rust on the fly, using rustc",
+  "description": "Lint Rust-files, using rustc and/or cargo",
   "repository": "https://github.com/AtomLinter/linter-rust",
   "license": "MIT",
   "engines": {
     "atom": ">0.50.0"
   },
-  "dependencies": {
-    "tmp": "0.0.26"
-  }
+  "dependencies": {}
 }

@@ -1,3 +1,7 @@
+# 0.1.0
+* Remove linting "on the fly".
+* Support Cargo. See #5. Thanks @liigo for ideas.
+
 # 0.0.13
 Added linting on the fly (experimental).
 
