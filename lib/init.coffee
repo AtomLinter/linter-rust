@@ -1,13 +1,9 @@
 module.exports =
   config:
-    executablePath:
+    rustHome:
       type: 'string'
-      default: 'rustc'
-      description: 'Path to rust compiller'
-    cargoExecutablePath:
-      type: 'string'
-      default: 'cargo'
-      description: 'Path to Cargo package manager'
+      default: '/usr/local'
+      description: 'Path to Rust\'s home directory. rustc should exist in /bin/rustc from here.'
     useCargo:
       type: 'boolean'
       default: true

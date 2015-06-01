@@ -6,6 +6,19 @@ Linter = require "#{linterPath}/lib/linter"
 fs = require 'fs'
 path = require 'path'
 
+merge = (xs...) ->
+  if xs?.length > 0
+    tap {}, (m) -> m[k] = v for k, v of x for x in xs
+
+tap = (o, fn) -> fn(o); o
+
+isWin = () -> /^win/.test(process.platform);
+
+sep = () ->
+  if isWin
+    return ';'
+  else
+    return ':'
 
 class LinterRust extends Linter
   regex: '(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n'
@@ -13,6 +26,7 @@ class LinterRust extends Linter
   linterName: 'rust'
   errorStream: 'stderr'
 
+  rustHomePath: ''
   rustcPath: ''
   cargoPath: ''
   cargoManifestFilename: ''
@@ -26,12 +40,12 @@ class LinterRust extends Linter
 
   constructor: (@editor) ->
     super @editor
-    atom.config.observe 'linter-rust.executablePath', =>
-      @rustcPath = atom.config.get 'linter-rust.executablePath'
-      exec "\"#{@rustcPath}\" --version", @executionCheckHandler
-    atom.config.observe 'linter-rust.cargoExecutablePath', =>
-      @cargoPath = atom.config.get 'linter-rust.cargoExecutablePath'
-      exec "\"#{@cargoPath}\" --version", @executionCheckHandler
+    atom.config.observe 'linter-rust.rustHome', =>
+      @rustHomePath = atom.config.get 'linter-rust.rustHome'
+      @rustcPath = @rustHomePath + '/bin/rustc'
+      @cargoPath = @rustHomePath + '/bin/cargo'
+      exec "\"#{@rustcPath}\" --version", {env: {PATH: @rustHomePath + sep() + process.env.path}}, @executionCheckHandler
+      exec "\"#{@cargoPath}\" --version", {env: {PATH: @rustHomePath + sep() + process.env.path}}, @executionCheckHandler
     atom.config.observe 'linter-rust.cargoManifestFilename', =>
       @cargoManifestFilename = atom.config.get 'linter-rust.cargoManifestFilename'
     atom.config.observe 'linter-rust.useCargo', =>
@@ -89,5 +103,8 @@ class LinterRust extends Linter
     else
       "#{type}: #{match.message}"
 
+
+  beforeSpawnProcess: (command, args, options) =>
+    {command: command, args: args, options: merge options, {env: {PATH: @rustHomePath + sep() + process.env.PATH}}}
 
 module.exports = LinterRust
