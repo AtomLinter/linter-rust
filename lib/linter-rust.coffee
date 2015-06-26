@@ -14,11 +14,7 @@ tap = (o, fn) -> fn(o); o
 
 isWin = () -> /^win/.test(process.platform);
 
-sep = () ->
-  if isWin
-    return ';'
-  else
-    return ':'
+sep = path.delimiter
 
 class LinterRust extends Linter
   regex: '(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n'
@@ -44,8 +40,8 @@ class LinterRust extends Linter
       @rustHomePath = atom.config.get 'linter-rust.rustHome'
       @rustcPath = @rustHomePath + '/bin/rustc'
       @cargoPath = @rustHomePath + '/bin/cargo'
-      exec "\"#{@rustcPath}\" --version", {env: {PATH: @rustHomePath + sep() + process.env.path}}, @executionCheckHandler
-      exec "\"#{@cargoPath}\" --version", {env: {PATH: @rustHomePath + sep() + process.env.path}}, @executionCheckHandler
+      exec "\"#{@rustcPath}\" --version", {env: {PATH: @rustHomePath + sep + process.env.path}}, @executionCheckHandler
+      exec "\"#{@cargoPath}\" --version", {env: {PATH: @rustHomePath + sep + process.env.path}}, @executionCheckHandler
     atom.config.observe 'linter-rust.cargoManifestFilename', =>
       @cargoManifestFilename = atom.config.get 'linter-rust.cargoManifestFilename'
     atom.config.observe 'linter-rust.useCargo', =>
@@ -105,6 +101,6 @@ class LinterRust extends Linter
 
 
   beforeSpawnProcess: (command, args, options) =>
-    {command: command, args: args, options: merge options, {env: {PATH: @rustHomePath + sep() + process.env.PATH}}}
+    {command: command, args: args, options: merge options, {env: {PATH: @rustHomePath + sep + process.env.PATH}}}
 
 module.exports = LinterRust
