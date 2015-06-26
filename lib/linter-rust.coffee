@@ -12,8 +12,6 @@ merge = (xs...) ->
 
 tap = (o, fn) -> fn(o); o
 
-isWin = () -> /^win/.test(process.platform);
-
 sep = path.delimiter
 
 class LinterRust extends Linter
