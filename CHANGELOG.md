@@ -1,3 +1,7 @@
+# 0.2.0
+* Migrate to linter-plus.
+* Add Rust home path configuration option.
+
 # 0.1.0
 * Remove linting "on the fly".
 * Support Cargo. See #5. Thanks @liigo for ideas.
