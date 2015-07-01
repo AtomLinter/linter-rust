@@ -1,8 +1,6 @@
-linterPath = atom.packages.getLoadedPackage("linter").path
-
-{BufferedProcess} = require 'atom'
-{findFile} = require "#{linterPath}/lib/utils"
+fs = require 'fs'
 path = require 'path'
+{BufferedProcess} = require 'atom'
 XRegExp = require('xregexp').XRegExp
 
 
@@ -58,7 +56,7 @@ class LinterRust
 
 
   initCmd: (editingFile) =>
-    cargoManifestPath = findFile editingFile, @config 'cargoManifestFilename'
+    cargoManifestPath = @locateCargo path.dirname editingFile
     rustHome = @config 'rustHome'
     rustcPath = path.join rustHome, 'bin', 'rustc'
     cargoPath = path.join rustHome, 'bin', 'cargo'
@@ -71,6 +69,18 @@ class LinterRust
     else
       @cmd = [cargoPath, 'build', '-j', @config('jobsNumber'), '--manifest-path']
       return cargoManifestPath
+
+
+  locateCargo: (curDir) =>
+    root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
+    cargoManifestFilename = @config 'cargoManifestFilename'
+    directory = path.resolve curDir
+    loop
+      return path.join directory, cargoManifestFilename if fs.existsSync path.join directory, cargoManifestFilename
+      break if root_dir.test directory
+      directory = path.resolve path.join(directory, '..')
+    return false
+
 
 
 module.exports = LinterRust
