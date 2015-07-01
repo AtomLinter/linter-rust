@@ -46,7 +46,7 @@ class LinterRust
 
       @lint_process = new BufferedProcess({command, args, options, stdout, stderr, exit})
       @lint_process.onWillThrowError ({error, handle}) ->
-
+        atom.notifications.addError "Failed to run #{command}",
           detail: "#{error.message}"
           dismissable: true
         handle()
