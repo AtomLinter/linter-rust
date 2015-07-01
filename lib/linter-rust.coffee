@@ -8,6 +8,7 @@ XRegExp = require('xregexp').XRegExp
 
 class LinterRust
   cargoDependencyDir: "target/debug/deps"
+  lint_process: null
 
   lint: (textEditor) =>
     return new Promise (resolve, reject) =>
@@ -43,9 +44,9 @@ class LinterRust
           }
         resolve(messages)
 
-      process = new BufferedProcess({command, args, options, stdout, stderr, exit})
-      process.onWillThrowError ({error, handle}) ->
-        atom.notifications.addError "Failed to run #{command}",
+      @lint_process = new BufferedProcess({command, args, options, stdout, stderr, exit})
+      @lint_process.onWillThrowError ({error, handle}) ->
+
           detail: "#{error.message}"
           dismissable: true
         handle()
