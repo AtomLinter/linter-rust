@@ -1,3 +1,6 @@
+# 0.2.1
+* Fix and close #20.
+
 # 0.2.0
 * Migrate to linter-plus.
 * Add Rust home path configuration option.
