@@ -25,7 +25,7 @@ class LinterRust
       stderr = (err) ->
         results.push err
       exit = (code) ->
-        return resolve [] unless code is 101
+        return resolve [] unless code is 101 or code is 0
         messages = []
         regex = XRegExp('(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n', '')
         XRegExp.forEach results.join(''), regex, (match) =>
