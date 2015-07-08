@@ -1,3 +1,6 @@
+# 0.2.3
+* Include columns in lint range (thanks to @b52).
+
 # 0.2.2
 * Remove 'linter-package' from the package.json. Close #23
 
