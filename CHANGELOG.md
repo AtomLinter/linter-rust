@@ -1,3 +1,6 @@
+# 0.2.2
+* Remove 'linter-package' from the package.json. Close #23
+
 # 0.2.1
 * Fix and close #20.
 
