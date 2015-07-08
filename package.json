@@ -1,6 +1,5 @@
 {
   "name": "linter-rust",
-  "linter-package": true,
   "main": "./lib/init",
   "version": "0.2.1",
   "description": "Lint Rust-files, using rustc and/or cargo",
