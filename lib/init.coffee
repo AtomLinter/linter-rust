@@ -2,10 +2,14 @@
 
 module.exports =
   config:
-    rustHome:
+    rustcPath:
       type: 'string'
-      default: '/usr/local'
-      description: 'Path to Rust\'s home directory. rustc should exist in /bin/rustc from here.'
+      default: 'rustc'
+      description: 'Path to Rust\'s compiler `rustc`.'
+    cargoPath:
+      type: 'string'
+      default: 'cargo'
+      description: 'Path to Rust\'s package manager `cargo`.'
     useCargo:
       type: 'boolean'
       default: true
@@ -35,9 +39,13 @@ module.exports =
       Please install https://github.com/zargony/atom-language-rust'
 
     @subscriptions = new CompositeDisposable
-    @subscriptions.add atom.config.observe 'linter-rust.rustHome',
-    (rustHome) =>
-      @rustHome = rustHome
+    @subscriptions.add atom.config.observe 'linter-rust.rustcPath',
+    (rustcPath) =>
+      @rustcPath = rustcPath
+
+    @subscriptions.add atom.config.observe 'linter-rust.cargoPath',
+    (cargoPath) =>
+      @cargoPath = cargoPath
 
     @subscriptions.add atom.config.observe 'linter-rust.useCargo',
     (useCargo) =>
