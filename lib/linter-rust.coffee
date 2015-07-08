@@ -1,7 +1,6 @@
 fs = require 'fs'
 path = require 'path'
 {BufferedProcess} = require 'atom'
-{spawn} = require 'child_process'
 {XRegExp} = require 'xregexp'
 
 
@@ -26,8 +25,10 @@ class LinterRust
       exit = (code) ->
         return resolve [] unless code is 101 or code is 0
         messages = []
-        regex = XRegExp('(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n', '')
-        XRegExp.forEach results.join(''), regex, (match) =>
+        regex = XRegExp('(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+\
+          ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+\
+          (?<message>.+)\n', '')
+        XRegExp.forEach results.join(''), regex, (match) ->
           type = if match.error
             "Error"
           else if match.warning
@@ -53,7 +54,7 @@ class LinterRust
 
 
   config: (key) ->
-      atom.config.get "linter-rust.#{key}"
+    atom.config.get "linter-rust.#{key}"
 
 
   initCmd: (editingFile) =>

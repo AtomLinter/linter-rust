@@ -5,15 +5,15 @@ module.exports =
     rustcPath:
       type: 'string'
       default: 'rustc'
-      description: 'Path to Rust\'s compiler `rustc`.'
+      description: "Path to Rust's compiler `rustc`."
     cargoPath:
       type: 'string'
       default: 'cargo'
-      description: 'Path to Rust\'s package manager `cargo`.'
+      description: "Path to Rust's package manager `cargo`."
     useCargo:
       type: 'boolean'
       default: true
-      description: 'Use Cargo if it\'s possible'
+      description: "Use Cargo if it's possible"
     cargoManifestFilename:
       type: 'string'
       default: 'Cargo.toml'
@@ -39,24 +39,20 @@ module.exports =
       Please install https://github.com/zargony/atom-language-rust'
 
     @subscriptions = new CompositeDisposable
-    @subscriptions.add atom.config.observe 'linter-rust.rustcPath',
-    (rustcPath) =>
+
+    @subscriptions.add atom.config.observe 'linter-rust.rustcPath', (rustcPath) =>
       @rustcPath = rustcPath
 
-    @subscriptions.add atom.config.observe 'linter-rust.cargoPath',
-    (cargoPath) =>
+    @subscriptions.add atom.config.observe 'linter-rust.cargoPath', (cargoPath) =>
       @cargoPath = cargoPath
 
-    @subscriptions.add atom.config.observe 'linter-rust.useCargo',
-    (useCargo) =>
+    @subscriptions.add atom.config.observe 'linter-rust.useCargo', (useCargo) =>
       @useCargo = useCargo
 
-    @subscriptions.add atom.config.observe 'linter-rust.cargoManifestFilename',
-    (cargoManifestFilename) =>
+    @subscriptions.add atom.config.observe 'linter-rust.cargoManifestFilename', (cargoManifestFilename) =>
       @cargoManifestFilename = cargoManifestFilename
 
-    @subscriptions.add atom.config.observe 'linter-rust.jobsNumber',
-    (jobsNumber) =>
+    @subscriptions.add atom.config.observe 'linter-rust.jobsNumber', (jobsNumber) =>
       @jobsNumber = jobsNumber
 
   deactivate: ->
@@ -64,11 +60,11 @@ module.exports =
 
 
   provideLinter: ->
-      LinterRust = require('./linter-rust')
-      @provider = new LinterRust()
-      return {
-        grammarScopes: ['source.rust']
-        scope: 'project'
-        lint: @provider.lint
-        lintOnFly: false
-      }
+    LinterRust = require('./linter-rust')
+    @provider = new LinterRust()
+    return {
+      grammarScopes: ['source.rust']
+      scope: 'project'
+      lint: @provider.lint
+      lintOnFly: false
+    }
