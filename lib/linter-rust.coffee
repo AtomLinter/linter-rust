@@ -31,6 +31,10 @@ class LinterRust
             "Error"
           else if match.warning
             "Warning"
+
+          if match.from_col == match.to_col
+            match.to_col += 1
+
           messages.push {
             type: type or 'Warning'
             text: match.message
