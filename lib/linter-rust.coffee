@@ -1,12 +1,16 @@
 fs = require 'fs'
 path = require 'path'
 {BufferedProcess} = require 'atom'
-XRegExp = require('xregexp').XRegExp
+{XRegExp} = require 'xregexp'
 
 
 class LinterRust
   cargoDependencyDir: "target/debug/deps"
-  lint_process: null
+  lintProcess: null
+  pattern: XRegExp('(?<file>.+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
+    (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
+    ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+\
+    (?<message>.+)\n', '')
 
   lint: (textEditor) =>
     return new Promise (resolve, reject) =>
@@ -22,38 +26,48 @@ class LinterRust
         console.log data if do atom.inDevMode
       stderr = (err) ->
         results.push err
-      exit = (code) ->
-        return resolve [] unless code is 101 or code is 0
-        messages = []
-        regex = XRegExp('(?<file>.+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*(?<to_line>\\d+):(?<to_col>\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+(?<message>.+)\n', '')
-        XRegExp.forEach results.join(''), regex, (match) =>
-          type = if match.error
-            "Error"
-          else if match.warning
-            "Warning"
 
-          if match.from_col == match.to_col
-            match.to_col += 1
+      exit = (code) =>
+        if code is 101 or code is 0
+          messages = @parse results.join('')
+          messages.forEach (message) ->
+            if !(path.isAbsolute message.filePath)
+              message.filePath = path.join curDir, message.filePath
+          resolve messages
+        else
+          resolve []
 
-          messages.push {
-            type: type or 'Warning'
-            text: match.message
-            filePath: if path.isAbsolute match.file then match.file else path.join curDir, match.file
-            range: [
-              [match.from_line - 1, match.from_col - 1],
-              [match.to_line - 1, match.to_col - 1]
-            ]
-          }
-        resolve(messages)
-
-      @lint_process = new BufferedProcess({command, args, options, stdout, stderr, exit})
-      @lint_process.onWillThrowError ({error, handle}) ->
+      @lintProcess = new BufferedProcess({command, args, options, stdout, stderr, exit})
+      @lintProcess.onWillThrowError ({error, handle}) ->
         atom.notifications.addError "Failed to run #{command}",
           detail: "#{error.message}"
           dismissable: true
         handle()
         resolve []
 
+  parse: (output) =>
+    messages = []
+
+    XRegExp.forEach output, @pattern, (match) ->
+      type = if match.error
+        "Error"
+      else if match.warning
+        "Warning"
+
+      if match.from_col == match.to_col
+        match.to_col += 1
+
+      messages.push {
+        type: type or 'Warning'
+        text: match.message
+        filePath: match.file
+        range: [
+          [match.from_line - 1, match.from_col - 1],
+          [match.to_line - 1, match.to_col - 1]
+        ]
+      }
+
+    return messages
 
   config: (key) ->
       atom.config.get "linter-rust.#{key}"
