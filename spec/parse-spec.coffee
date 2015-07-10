@@ -39,3 +39,24 @@ describe "LinterRust::parse", ->
         filePath: 'foo'
         range: [[0, 0], [1, 1]]
       }])
+
+  it "should properly parse multiline messages", ->
+    expect(linter.parse('bar:1:2: 3:4 error: line one\n\
+                         two\n'))
+      .toEqual([
+        { type: 'Error', text: 'line one\ntwo', filePath: 'bar', range: [[0, 1], [2, 3]] }
+      ])
+    expect(linter.parse('bar:1:2: 3:4 error: line one\n\
+                         two\n\
+                         foo:1:1: 1:2 warning: simple line\n'))
+      .toEqual([
+        { type: 'Error', text: 'line one\ntwo', filePath: 'bar', range: [[0, 1], [2, 3]] },
+        { type: 'Warning', text: 'simple line', filePath: 'foo', range: [[0, 0], [0, 1]] }
+      ])
+    expect(linter.parse('bar:1:2: 3:4 error: line one\n\
+                         two\n\
+                         three\n\
+                         foo:1   shouldnt match'))
+      .toEqual([
+        { type: 'Error', text: 'line one\ntwo\nthree', filePath: 'bar', range: [[0, 1], [2, 3]] }
+      ])
