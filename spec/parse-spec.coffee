@@ -60,3 +60,11 @@ describe "LinterRust::parse", ->
       .toEqual([
         { type: 'Error', text: 'line one\ntwo\nthree', filePath: 'bar', range: [[0, 1], [2, 3]] }
       ])
+
+  it "should also cope with windows line breaks", ->
+    expect(linter.parse('a:1:2: 3:4 error: a\r\nb\n')[0].text)
+      .toEqual('a\r\nb')
+
+    multi = linter.parse('a:1:2: 3:4 error: a\n\rb\n\rx:1:2: 3:4 error: asd\r\n')
+    expect(multi[0].text).toEqual('a\n\rb')
+    expect(multi[1].text).toEqual('asd')
