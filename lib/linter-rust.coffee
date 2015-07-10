@@ -68,15 +68,14 @@ class LinterRust
     return messages
 
   config: (key) ->
-      atom.config.get "linter-rust.#{key}"
+    atom.config.get "linter-rust.#{key}"
 
 
   initCmd: (editingFile) =>
     cargoManifestPath = @locateCargo path.dirname editingFile
-    rustHome = @config 'rustHome'
-    rustcPath = path.join rustHome, 'bin', 'rustc'
-    cargoPath = path.join rustHome, 'bin', 'cargo'
-    if not cargoPath or not @config('useCargo') or not cargoManifestPath
+    rustcPath = @config 'rustcPath'
+    cargoPath = @config 'cargoPath'
+    if not @config('useCargo') or not cargoManifestPath
       @cmd = [rustcPath, '-Z', 'no-trans', '--color', 'never']
       if cargoManifestPath
         @cmd.push '-L'
