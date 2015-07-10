@@ -47,7 +47,6 @@ class LinterRust
 
   parse: (output) =>
     messages = []
-
     XRegExp.forEach output, @pattern, (match) ->
       type = if match.error
         "Error"
@@ -55,7 +54,7 @@ class LinterRust
         "Warning"
 
       if match.from_col == match.to_col
-        match.to_col += 1
+        match.to_col = parseInt(match.to_col) + 1
 
       messages.push {
         type: type or 'Warning'
@@ -66,7 +65,6 @@ class LinterRust
           [match.to_line - 1, match.to_col - 1]
         ]
       }
-
     return messages
 
   config: (key) ->
