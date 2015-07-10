@@ -7,10 +7,10 @@ path = require 'path'
 class LinterRust
   cargoDependencyDir: "target/debug/deps"
   lintProcess: null
-  pattern: XRegExp('(?<file>.+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
+  pattern: XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
     (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
     ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+\
-    (?<message>.+)\n', '')
+    (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
 
   lint: (textEditor) =>
     return new Promise (resolve, reject) =>
