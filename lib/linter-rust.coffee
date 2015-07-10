@@ -25,21 +25,25 @@ class LinterRust
       exit = (code) ->
         return resolve [] unless code is 101 or code is 0
         messages = []
-        regex = XRegExp('(?<file>.+):(?<line>\\d+):(?<col>\\d+):\\s*(\\d+):(\\d+)\\s+\
-          ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+\
+        regex = XRegExp('(?<file>.+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
+          (?<to_line>\\d+):(?<to_col>\\d+)\\s+((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+\
           (?<message>.+)\n', '')
         XRegExp.forEach results.join(''), regex, (match) ->
           type = if match.error
             "Error"
           else if match.warning
             "Warning"
+
+          if match.from_col == match.to_col
+            match.to_col += 1
+
           messages.push {
             type: type or 'Warning'
             text: match.message
             filePath: if path.isAbsolute match.file then match.file else path.join curDir, match.file
             range: [
-              [match.line - 1, 0],
-              [match.line - 1, 0]
+              [match.from_line - 1, match.from_col - 1],
+              [match.to_line - 1, match.to_col - 1]
             ]
           }
         resolve(messages)
