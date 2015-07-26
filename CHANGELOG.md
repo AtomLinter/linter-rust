@@ -1,3 +1,6 @@
+# 0.2.5
+* Changed 'rustc' and 'cargo' commands so that test code gets linted in addition to normal code (@psFried). 
+
 # 0.2.4
 * Support multiline lint messages
 * Use explicit path to rusts executables
