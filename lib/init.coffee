@@ -14,6 +14,10 @@ module.exports =
       type: 'boolean'
       default: true
       description: "Use Cargo if it's possible"
+    buildTest:
+      type: 'boolean'
+      default: false
+      description: "Lint test code"
     cargoManifestFilename:
       type: 'string'
       default: 'Cargo.toml'
@@ -48,6 +52,9 @@ module.exports =
 
     @subscriptions.add atom.config.observe 'linter-rust.useCargo', (useCargo) =>
       @useCargo = useCargo
+
+    @subscriptions.add atom.config.observe 'linter-rust.buildTest', (buildTest) =>
+      @useCargo = buildTest
 
     @subscriptions.add atom.config.observe 'linter-rust.cargoManifestFilename', (cargoManifestFilename) =>
       @cargoManifestFilename = cargoManifestFilename
