@@ -76,13 +76,19 @@ class LinterRust
     rustcPath = @config 'rustcPath'
     cargoPath = @config 'cargoPath'
     if not @config('useCargo') or not cargoManifestPath
-      @cmd = [rustcPath, '--cfg', 'test', '-Z', 'no-trans', '--color', 'never']
+      if @config('buildTest')
+        @cmd = [rustcPath, '--cfg', 'test', '-Z', 'no-trans', '--color', 'never']
+      else
+        @cmd = [rustcPath, '-Z', 'no-trans', '--color', 'never']
       if cargoManifestPath
         @cmd.push '-L'
         @cmd.push path.join path.dirname(cargoManifestPath), @cargoDependencyDir
       return editingFile
     else
-      @cmd = [cargoPath, 'test', '--no-run', '-j', @config('jobsNumber'), '--manifest-path']
+      if @config('buildTest')
+        @cmd = [cargoPath, 'test', '--no-run', '-j', @config('jobsNumber'), '--manifest-path']
+      else
+        @cmd = [cargoPath, 'build', '-j', @config('jobsNumber'), '--manifest-path']
       return cargoManifestPath
 
 
