@@ -1,3 +1,6 @@
+# 0.2.7
+* Use "Trace" instead of "Warning" for rustc's informational messages (@johnsoft)
+
 # 0.2.6
 * Add config option for building test code (@dgriffen)
 
