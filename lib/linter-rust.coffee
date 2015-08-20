@@ -9,7 +9,7 @@ class LinterRust
   lintProcess: null
   pattern: XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
     (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
-    ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note)):\\s+\
+    ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
     (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
 
   lint: (textEditor) =>
