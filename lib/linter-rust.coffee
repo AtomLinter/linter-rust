@@ -17,6 +17,9 @@ class LinterRust
       results = []
       file = @initCmd do textEditor.getPath
       curDir = path.dirname file
+      PATH = path.dirname @cmd[0]
+      options = @makeOpts(PATH)
+      options.cwd = curDir
       @cmd.push file
       command = @cmd[0]
       options = {cwd: curDir}
@@ -108,6 +111,17 @@ class LinterRust
       directory = path.resolve path.join(directory, '..')
     return false
 
+  makeOpts: (PATH) ->
+    options = process.env;
 
+    switch process.platform
+      when "darwin" || "linux"
+        delim = ":"
+        options.PATH = "/usr/local/bin" + delim + PATH
+      when "win32"
+        delim = ";"
+        options.Path = "/usr/local/bin" + delim + PATH
+
+    options
 
 module.exports = LinterRust
