@@ -116,11 +116,9 @@ class LinterRust
 
     switch process.platform
       when "darwin" || "linux"
-        delim = ":"
-        options.PATH = "/usr/local/bin" + delim + PATH
+        options.PATH = PATH + path.delimiter + options.PATH
       when "win32"
-        delim = ";"
-        options.Path = "/usr/local/bin" + delim + PATH
+        options.Path = PATH + path.delimiter + options.Path
 
     options
 
