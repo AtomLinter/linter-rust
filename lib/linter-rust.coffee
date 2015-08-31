@@ -22,7 +22,6 @@ class LinterRust
       options.cwd = curDir
       @cmd.push file
       command = @cmd[0]
-      options = {cwd: curDir}
       args = @cmd.slice 1
 
       stdout = (data) ->
