@@ -1,3 +1,6 @@
+# 0.2.9
+* Fix #36 (@andrewrynhard)
+
 # 0.2.8
 * Include rustc's help messages in lints (@johnsoft)
 
