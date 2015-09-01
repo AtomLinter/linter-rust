@@ -17,9 +17,12 @@ class LinterRust
       results = []
       file = @initCmd do textEditor.getPath
       curDir = path.dirname file
+      PATH = path.dirname @cmd[0]
+      options = process.env;
+      options.PATH = PATH + path.delimiter + options.PATH
+      options.cwd = curDir
       @cmd.push file
       command = @cmd[0]
-      options = {cwd: curDir}
       args = @cmd.slice 1
 
       stdout = (data) ->
@@ -107,7 +110,5 @@ class LinterRust
       break if root_dir.test directory
       directory = path.resolve path.join(directory, '..')
     return false
-
-
 
 module.exports = LinterRust
