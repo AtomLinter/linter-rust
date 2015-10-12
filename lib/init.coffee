@@ -70,6 +70,7 @@ module.exports =
     LinterRust = require('./linter-rust')
     @provider = new LinterRust()
     return {
+      name: 'Rust'
       grammarScopes: ['source.rust']
       scope: 'project'
       lint: @provider.lint
