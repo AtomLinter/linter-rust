@@ -1,3 +1,6 @@
+# 0.2.10
+* Add name for the linter (@LegNeato)
+
 # 0.2.9
 * Fix #36 (@andrewrynhard)
 
