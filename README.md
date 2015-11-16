@@ -10,7 +10,4 @@ Files will be checked when you open or save them.
 * `$ apm install linter-rust`
 
 ## Other available linters
-There are other linters available - take a look at the linters [mainpage](https://github.com/AtomLinter/Linter).
-
-## Donation
-[![Share the love!](https://chewbacco-stuff.s3.amazonaws.com/donate.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=KXUYS4ARNHCN8)
+There are other linters available - take a look at the linters [mainpage](http://atomlinter.github.io).
