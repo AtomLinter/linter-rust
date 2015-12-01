@@ -14,6 +14,12 @@ module.exports =
       type: 'boolean'
       default: true
       description: "Use Cargo if it's possible"
+    useRustcNotrans:
+      type: 'boolean'
+      default: false
+      description: "Use 'cargo rustc -Zno-trans' instead of 'cargo build' to
+        lint.  Faster, but does not build the project.  Cargo must be enabled.
+        Does not apply to test code."
     buildTest:
       type: 'boolean'
       default: false
