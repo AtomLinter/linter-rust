@@ -97,7 +97,10 @@ class LinterRust
       if @config('buildTest')
         @cmd = [cargoPath, 'test', '--no-run', '-j', @config('jobsNumber'), '--manifest-path']
       else
-        @cmd = [cargoPath, 'build', '-j', @config('jobsNumber'), '--manifest-path']
+        if @config('useRustcNotrans')
+          @cmd = [cargoPath, 'rustc', '-Zno-trans', '--color', 'never', '-j', @config('jobsNumber'), '--manifest-path']
+        else
+          @cmd = [cargoPath, 'build', '-j', @config('jobsNumber'), '--manifest-path']
       return cargoManifestPath
 
 
