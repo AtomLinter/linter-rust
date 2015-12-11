@@ -2,28 +2,30 @@
 
 module.exports =
   config:
-    rustcPath:
-      type: 'string'
-      default: 'rustc'
-      description: "Path to Rust's compiler `rustc`."
-    cargoPath:
-      type: 'string'
-      default: 'cargo'
-      description: "Path to Rust's package manager `cargo`."
     useCargo:
       type: 'boolean'
       default: true
       description: "Use Cargo if it's possible"
-    useRustcNotrans:
+    rustcPath:
+      type: 'string'
+      default: 'rustc'
+      description: "Path to Rust's compiler `rustc`"
+    rustcBuildTest:
       type: 'boolean'
       default: false
-      description: "Use 'cargo rustc -Zno-trans' instead of 'cargo build' to
-        lint.  Faster, but does not build the project.  Cargo must be enabled.
-        Does not apply to test code."
-    buildTest:
-      type: 'boolean'
-      default: false
-      description: "Lint test code"
+      description: "Lint test code, when using `rustc`"
+    cargoPath:
+      type: 'string'
+      default: 'cargo'
+      description: "Path to Rust's package manager `cargo`"
+    cargoCommand:
+      type: 'string'
+      default: 'build'
+      enum: ['build', 'check', 'test', 'rustc']
+      description: "Use 'check' for fast linting (you need to install
+        `cargo-check`). Use 'test' to lint test code, too.
+        Use 'rustc' for fast linting (note: does not build
+        the project)."
     cargoManifestFilename:
       type: 'string'
       default: 'Cargo.toml'
@@ -53,14 +55,17 @@ module.exports =
     @subscriptions.add atom.config.observe 'linter-rust.rustcPath', (rustcPath) =>
       @rustcPath = rustcPath
 
+    @subscriptions.add atom.config.observe 'linter-rust.rustcBuildTest', (rustcBuildTest) =>
+      @rustcBuildTest = rustcBuildTest
+
     @subscriptions.add atom.config.observe 'linter-rust.cargoPath', (cargoPath) =>
       @cargoPath = cargoPath
 
+    @subscriptions.add atom.config.observe 'linter-rust.cargoPath', (cargoCommand) =>
+      @cargoCommand = cargoCommand
+
     @subscriptions.add atom.config.observe 'linter-rust.useCargo', (useCargo) =>
       @useCargo = useCargo
-
-    @subscriptions.add atom.config.observe 'linter-rust.buildTest', (buildTest) =>
-      @useCargo = buildTest
 
     @subscriptions.add atom.config.observe 'linter-rust.cargoManifestFilename', (cargoManifestFilename) =>
       @cargoManifestFilename = cargoManifestFilename
