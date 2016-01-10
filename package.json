@@ -16,6 +16,11 @@
     }
   },
   "dependencies": {
+    "atom-package-deps": "^3.0.7",
     "xregexp": "~2.0.0"
-  }
+  },
+  "package-deps": [
+    "linter",
+    "language-rust"
+  ]
 }

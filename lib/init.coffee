@@ -40,15 +40,7 @@ module.exports =
     console.log 'Linter-Rust: package loaded,
                 ready to get initialized by AtomLinter.'
 
-    if not atom.packages.getLoadedPackage 'linter'
-      atom.notifications.addError 'Linter package not found',
-      detail: '[linter-rust] `linter` package not found. \
-      Please install https://github.com/AtomLinter/Linter'
-
-    if not atom.packages.getLoadedPackage 'language-rust'
-      atom.notifications.addError 'Language-rust package not found',
-      detail: '[linter-rust] `language-rust` package not found. \
-      Please install https://github.com/zargony/atom-language-rust'
+    do require('atom-package-deps').install
 
     @subscriptions = new CompositeDisposable
 
