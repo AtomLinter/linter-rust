@@ -91,6 +91,7 @@ class LinterRust
       when 'check' then ['check']
       when 'test' then ['test', '--no-run']
       when 'rustc' then ['rustc', '-Zno-trans', '--color', 'never']
+      when 'clippy' then ['clippy']
       else ['build']
 
     if not @config('useCargo') or not cargoManifestPath
