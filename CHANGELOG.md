@@ -1,3 +1,6 @@
+# 0.4.0
+* Add choice to use clippy for linting. Tanks to @White-Oak
+
 # 0.3.0
 * Minor refactor + option for cargo-check (@colin-kiegel)
 
