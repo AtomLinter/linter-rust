@@ -16,7 +16,7 @@
     }
   },
   "dependencies": {
-    "atom-package-deps": "^3.0.7",
+    "atom-package-deps": "^4.0.0",
     "xregexp": "~2.0.0"
   },
   "package-deps": [
