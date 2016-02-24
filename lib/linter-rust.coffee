@@ -1,7 +1,7 @@
 fs = require 'fs'
 path = require 'path'
 {BufferedProcess} = require 'atom'
-{XRegExp} = require 'xregexp'
+XRegExp = require 'xregexp'
 spawn = require ('child_process')
 
 
