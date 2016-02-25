@@ -1,7 +1,7 @@
 {
   "name": "linter-rust",
   "main": "./lib/init",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Lint Rust-files, using rustc and/or cargo",
   "repository": "https://github.com/AtomLinter/linter-rust",
   "license": "MIT",
