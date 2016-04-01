@@ -68,14 +68,29 @@ class LinterRust
           filePath: match.file
           range: range
       else
-        lastMessage =
-          type: if match.error then "Error" else "Warning"
-          text: match.message
-          filePath: match.file
-          range: range
-        messages.push lastMessage
+        disabledWarnings = @config 'disabledWarnings'
+        if match.warning and warnings
+          lastMessage = @constructMessage match
+          for disabledWarning in disabledWarnings
+            if match.text.indexOf disabledWarning
+              lastMessage = false
+              break
+          if lastMessage
+            messages.push lastMessage
+        else
+          messages.push @constructMessage match
 
     return messages
+
+
+  constructMessage: (match) ->
+    message =
+      type: if match.error then "Error" else "Warning"
+      text: match.message
+      filePath: match.file
+      range: range
+    message
+
 
   config: (key) ->
     atom.config.get "linter-rust.#{key}"

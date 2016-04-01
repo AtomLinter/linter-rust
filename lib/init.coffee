@@ -24,7 +24,7 @@ module.exports =
       enum: ['build', 'check', 'test', 'rustc', 'clippy']
       description: "Use 'check' for fast linting (you need to install
         `cargo-check`). Use 'clippy' to increase amount of available lints
-        (you need to install `cargo-clippy`). 
+        (you need to install `cargo-clippy`).
         Use 'test' to lint test code, too.
         Use 'rustc' for fast linting (note: does not build
         the project)."
@@ -37,6 +37,12 @@ module.exports =
       default: 2
       enum: [1, 2, 4, 6, 8, 10]
       description: 'Number of jobs to run Cargo in parallel'
+    disabledWarnings:
+      type: 'array'
+        default: []
+        items:
+          type: 'string'
+        description: 'Linting warnings to be ignored in editor'
 
   activate: ->
     console.log 'Linter-Rust: package loaded,
