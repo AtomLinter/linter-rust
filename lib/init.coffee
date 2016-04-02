@@ -6,6 +6,10 @@ module.exports =
       type: 'boolean'
       default: true
       description: "Use Cargo if it's possible"
+    useMultirustForClippy:
+      type: 'boolean'
+      default: true
+      description: "Use multirust for clippy"
     rustcPath:
       type: 'string'
       default: 'rustc'
