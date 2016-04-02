@@ -143,13 +143,16 @@ class LinterRust
 
 
    buildCargoPath: (cargoPath) =>
-     if (@config 'cargoCommand') == 'clippy' and @usingMultirustForClippy
+     if (@config 'cargoCommand') == 'clippy' and @usingMultirustForClippy()
        return ['multirust','run', 'nightly', 'cargo']
      else
        return [cargoPath]
 
    usingMultirustForClippy: () =>
-     result = spawn.spawnSync 'multirust', ['--version']
-     return result.status == 0
+     try
+       result = spawn.execSync 'multirust --version'
+       return result.status == 0
+     catch
+       return false
 
 module.exports = LinterRust
