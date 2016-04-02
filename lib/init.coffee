@@ -39,10 +39,10 @@ module.exports =
       description: 'Number of jobs to run Cargo in parallel'
     disabledWarnings:
       type: 'array'
-        default: []
-        items:
-          type: 'string'
-        description: 'Linting warnings to be ignored in editor'
+      default: []
+      items:
+        type: 'string'
+      description: 'Linting warnings to be ignored in editor, separated with commas.'
 
   activate: ->
     console.log 'Linter-Rust: package loaded,
