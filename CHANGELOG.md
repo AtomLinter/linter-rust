@@ -1,3 +1,7 @@
+# 0.4.5
+* Added fallback to cargo for clippy if multirust isn't available (@White-Oak)
+* Added option to disable certain lintings in editor (@White-Oak)
+
 # 0.4.1
 * Update xregexp to version 3.1.0
 * Allow using multirust for clippy (@White-Oak)
