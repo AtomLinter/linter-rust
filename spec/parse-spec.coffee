@@ -68,3 +68,16 @@ describe "LinterRust::parse", ->
     multi = linter.parse('a:1:2: 3:4 error: a\n\rb\n\rx:1:2: 3:4 error: asd\r\n')
     expect(multi[0].text).toEqual('a\n\rb')
     expect(multi[1].text).toEqual('asd')
+
+  it "should not throw an error with extra whitespace in paths", ->
+    buildLinterWithWhitespacePath = () ->
+      atom.config.set "linter-rust.rustc", "rustc\n"
+      atom.config.set "linter-rust.cargo", "cargo\n"
+      new LinterRust()
+
+    resetPath = () ->
+      atom.config.set "linter-rust.rustc", "rustc"
+      atom.config.set "linter-rust.cargo", "cargo"
+
+    expect(buildLinterWithWhitespacePath).not.toThrow()
+    resetPath()

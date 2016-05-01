@@ -105,11 +105,11 @@ class LinterRust
 
   initCmd: (editingFile) =>
     cargoManifestPath = @locateCargo path.dirname editingFile
-    rustcPath = @config 'rustcPath'
+    rustcPath = (@config 'rustcPath').trim()
     rustcArgs = switch @config 'rustcBuildTest'
       when true then ['--cfg', 'test', '-Z', 'no-trans', '--color', 'never']
       else ['-Z', 'no-trans', '--color', 'never']
-    cargoPath = @config 'cargoPath'
+    cargoPath = (@config 'cargoPath').trim()
     cargoArgs = switch @config 'cargoCommand'
       when 'check' then ['check']
       when 'test' then ['test', '--no-run']
