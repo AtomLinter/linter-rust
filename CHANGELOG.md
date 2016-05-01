@@ -1,3 +1,7 @@
+# 0.4.6
+* Fixed undesirable modification of global objects (@lhecker)
+* Trim whitespace from rustc and cargo paths (@chriskrycho)
+
 # 0.4.5
 * Added fallback to cargo for clippy if multirust isn't available (@White-Oak)
 * Added option to disable certain lintings in editor (@White-Oak)
