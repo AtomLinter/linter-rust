@@ -12,6 +12,8 @@ class LinterRust
     (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
     ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
     (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
+  patternRustcVersion: XRegExp('rustc 1.\\d+.\\d+(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
+                                \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\)')
 
   lint: (textEditor) =>
     return new Promise (resolve, reject) =>
@@ -22,7 +24,6 @@ class LinterRust
       options = JSON.parse JSON.stringify process.env
       options.PATH = PATH + path.delimiter + options.PATH
       options.cwd = curDir
-      @cmd.push file
       command = @cmd[0]
       args = @cmd.slice 1
 
@@ -33,7 +34,10 @@ class LinterRust
 
       exit = (code) =>
         if code is 101 or code is 0
-          messages = @parse results.join('')
+          unless do @ableToJSONErrors
+            messages = @parse results.join('')
+          else
+            messages = @parseJSON results
           messages.forEach (message) ->
             if !(path.isAbsolute message.filePath)
               message.filePath = path.join curDir, message.filePath
@@ -49,14 +53,40 @@ class LinterRust
         handle()
         resolve []
 
+  parseJSON: (results) =>
+    elements = []
+    for result in results
+      subresults = result.split '\n'
+      for result in subresults
+        if result.startsWith '{'
+          input = JSON.parse result
+          continue unless input.spans
+          primary_span = input.spans.find (span) -> span.is_primary
+          continue unless primary_span
+          range = [
+            [primary_span.line_start - 1, primary_span.column_start - 1],
+            [primary_span.line_end - 1, primary_span.column_end - 1]
+          ]
+          input.level = 'error' if input == 'fatal error'
+          element =
+            type: input.level
+            message: input.message
+            file: primary_span.file_name
+            range: range
+            children: input.children
+          for span in input.spans
+            unless span.is_primary
+              element.children.push
+                message: span.label
+                range: [
+                  [span.line_start - 1, span.column_start - 1],
+                  [span.line_end - 1, span.column_end - 1]
+                ]
+          elements.push element
+    @buildMessages(elements)
+
   parse: (output) =>
-    messages = []
-    lastMessage = null
-    # An additional flag to show, that the last message was suppressed
-    lastMessageDisabled = false
-    disabledWarnings = @config 'disabledWarnings'
-    # A pointer to this.constructMessage, as it is not available from closure
-    constructMessage = @constructMessage
+    elements = []
     XRegExp.forEach output, @pattern, (match) ->
       if match.from_col == match.to_col
         match.to_col = parseInt(match.to_col) + 1
@@ -64,38 +94,71 @@ class LinterRust
         [match.from_line - 1, match.from_col - 1],
         [match.to_line - 1, match.to_col - 1]
       ]
+      level = if match.error then 'error'
+      else if match.warning then 'warning'
+      else if match.info then 'info'
+      else if match.trace then 'trace'
+      else if match.note then 'note'
+      element =
+        type: level
+        message: match.message
+        file: match.file
+        range: range
+      elements.push element
+    @buildMessages elements
 
-      if match.info and (lastMessage or lastMessageDisabled)
-        # An additional check to suppress notes/info after suppressed warning
-        if not lastMessageDisabled
-          lastMessage.trace or= []
-          lastMessage.trace.push
-            type: "Trace"
-            text: match.message
-            filePath: match.file
-            range: range
-      else
-        if match.warning and disabledWarnings
-          for disabledWarning in disabledWarnings
-            # Find a disabled lint in warning message
-            if match.message.indexOf(disabledWarning) > 0
-              lastMessageDisabled = true
-              break
-          if not lastMessageDisabled
-            messages.push constructMessage match, range
-        else
-          messages.push constructMessage match, range
-          lastMessageDisabled = false
-
+  buildMessages: (elements) =>
+    messages = []
+    lastMessage = null
+    disabledWarnings = @config 'disabledWarnings'
+    for element in elements
+      switch element.type
+        when 'info', 'trace', 'note'
+          # Add only if there is a last message
+          if lastMessage
+            lastMessage.trace or= []
+            lastMessage.trace.push
+              type: "Trace"
+              text: element.message
+              filePath: element.file
+              range: element.range
+        when 'warning'
+          # If the message is warning and user enabled disabling warnings
+          # Check if this warning is disabled
+          if disabledWarnings and disabledWarnings.length > 0
+            messageIsDisabledLint = false
+            for disabledWarning in disabledWarnings
+              # Find a disabled lint in warning message
+              if element.message.indexOf(disabledWarning) >= 0
+                messageIsDisabledLint = true
+                lastMessage = null
+                break
+            if not messageIsDisabledLint
+              lastMessage = @constructMessage "Warning", element
+              messages.push lastMessage
+          else
+            lastMessage = @constructMessage "Warning" , element
+            messages.push lastMessage
+        when 'error', 'fatal error'
+          lastMessage = @constructMessage "Error", element
+          messages.push lastMessage
     return messages
 
-
-  constructMessage: (match, range) ->
+  constructMessage: (type, element) ->
     message =
-      type: if match.error then "Error" else "Warning"
-      text: match.message
-      filePath: match.file
-      range: range
+      type: type
+      text: element.message
+      filePath: element.file
+      range: element.range
+    # children exists only in JSON messages
+    if element.children
+      message.trace = []
+      for children in element.children
+        message.trace.push
+          type: "Trace"
+          text: children.message
+          filePath: element.file
+          range: children.range or element.range
     message
 
 
@@ -123,13 +186,22 @@ class LinterRust
       if cargoManifestPath
         @cmd.push '-L'
         @cmd.push path.join path.dirname(cargoManifestPath), @cargoDependencyDir
+      @cmd.concat[editingFile]
       return editingFile
     else
       @cmd = @buildCargoPath cargoPath
         .concat cargoArgs
-        .concat ['-j', @config('jobsNumber'), '--manifest-path']
+        .concat ['-j', @config('jobsNumber')]
+      @cmd = @cmd.concat ['--','--error-format=json'] if do @ableToJSONErrors
+      @cmd.concat ['--manifest-path', cargoManifestPath]
       return cargoManifestPath
 
+
+  ableToJSONErrors: () =>
+    rustcPath = (@config 'rustcPath').trim()
+    result = spawn.execSync rustcPath + ' --version'
+    match = XRegExp.exec result, @patternRustcVersion
+    return match.nightly and match.date > '2016-08-08'
 
   locateCargo: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
@@ -151,8 +223,8 @@ class LinterRust
    usingMultirustForClippy: () =>
      try
        result = spawn.execSync 'multirust --version'
-       return result.status == 0
+       true
      catch
-       return false
+       false
 
 module.exports = LinterRust
