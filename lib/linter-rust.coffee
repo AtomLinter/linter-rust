@@ -201,7 +201,7 @@ class LinterRust
     rustcPath = (@config 'rustcPath').trim()
     result = spawn.execSync rustcPath + ' --version'
     match = XRegExp.exec result, @patternRustcVersion
-    return match.nightly and match.date > '2016-08-08'
+    return match and match.nightly and match.date > '2016-08-08'
 
   locateCargo: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
