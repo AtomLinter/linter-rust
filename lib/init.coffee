@@ -10,10 +10,6 @@ module.exports =
       type: 'string'
       default: 'rustc'
       description: "Path to Rust's compiler `rustc`"
-    rustcBuildTest:
-      type: 'boolean'
-      default: false
-      description: "Lint test code, when using `rustc`"
     cargoPath:
       type: 'string'
       default: 'cargo'
@@ -43,6 +39,12 @@ module.exports =
       items:
         type: 'string'
       description: 'Linting warnings to be ignored in editor, separated with commas.'
+    specifiedFeatures:
+      type: 'array'
+      default: ['test']
+      items:
+        type: 'string'
+      description: 'Additional features to be passed, when linting (for example, `test` to lint test code)'
 
   activate: ->
     console.log 'Linter-Rust: package loaded,
