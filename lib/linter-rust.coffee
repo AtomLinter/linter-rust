@@ -169,9 +169,7 @@ class LinterRust
   initCmd: (editingFile) =>
     cargoManifestPath = @locateCargo path.dirname editingFile
     rustcPath = (@config 'rustcPath').trim()
-    rustcArgs = switch @config 'rustcBuildTest'
-      when true then ['--cfg', 'test', '-Z', 'no-trans', '--color', 'never']
-      else ['-Z', 'no-trans', '--color', 'never']
+    rustcArgs = ['-Z', 'no-trans', '--color', 'never']
     cargoPath = (@config 'cargoPath').trim()
     cargoArgs = switch @config 'cargoCommand'
       when 'check' then ['check']
@@ -186,16 +184,28 @@ class LinterRust
       if cargoManifestPath
         @cmd.push '-L'
         @cmd.push path.join path.dirname(cargoManifestPath), @cargoDependencyDir
-      @cmd.concat[editingFile]
+      @cmd = @cmd.concat @compilationFeatures(false)
+      @cmd = @cmd.concat [editingFile]
       return editingFile
     else
       @cmd = @buildCargoPath cargoPath
         .concat cargoArgs
         .concat ['-j', @config('jobsNumber')]
+      @cmd = @cmd.concat @compilationFeatures(true)
+      @cmd = @cmd.concat ['--manifest-path', cargoManifestPath]
       @cmd = @cmd.concat ['--','--error-format=json'] if do @ableToJSONErrors
-      @cmd.concat ['--manifest-path', cargoManifestPath]
       return cargoManifestPath
 
+  compilationFeatures: (cargo) =>
+    features = @config 'specifiedFeatures'
+    if features
+      if cargo
+        ['--features',features.join(' ')]
+      else
+        result = []
+        cfgs = for f in features
+          result.push ['--cfg', "feature=\"#{f}\""]
+        result
 
   ableToJSONErrors: () =>
     rustcPath = (@config 'rustcPath').trim()
