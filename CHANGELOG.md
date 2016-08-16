@@ -1,3 +1,6 @@
+# 0.5.0
+* Added support for JSON error output of rustc (@White-Oak)
+
 # 0.4.6
 * Fixed undesirable modification of global objects (@lhecker)
 * Trim whitespace from rustc and cargo paths (@chriskrycho)
