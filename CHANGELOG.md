@@ -1,3 +1,6 @@
+# 0.5.1
+* Ability to specify features to lint (@White-Oak)
+
 # 0.5.0
 * Added support for JSON error output of rustc (@White-Oak)
 
