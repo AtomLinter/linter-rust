@@ -34,7 +34,6 @@ class LinterRust
           atom.notifications.addError "Invalid specified features",
             detail: "#{err}"
             dismissable: true
-          handle()
         results.push err
 
       exit = (code) =>
