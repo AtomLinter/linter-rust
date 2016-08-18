@@ -1,3 +1,6 @@
+# 0.5.2
+* Removed default values for features specified, fix #65 (@White-Oak)
+
 # 0.5.1
 * Ability to specify features to lint (@White-Oak)
 
