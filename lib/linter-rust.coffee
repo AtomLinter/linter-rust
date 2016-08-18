@@ -30,6 +30,11 @@ class LinterRust
       stdout = (data) ->
         console.log data if do atom.inDevMode
       stderr = (err) ->
+        if err.indexOf('does not have these features')
+          atom.notifications.addError "Invalid specified features",
+            detail: "#{err}"
+            dismissable: true
+          handle()
         results.push err
 
       exit = (code) =>
@@ -169,7 +174,9 @@ class LinterRust
   initCmd: (editingFile) =>
     cargoManifestPath = @locateCargo path.dirname editingFile
     rustcPath = (@config 'rustcPath').trim()
-    rustcArgs = ['-Z', 'no-trans', '--color', 'never']
+    rustcArgs = switch @config 'rustcBuildTest'
+      when true then ['--cfg', 'test', '-Z', 'no-trans', '--color', 'never']
+      else ['-Z', 'no-trans', '--color', 'never']
     cargoPath = (@config 'cargoPath').trim()
     cargoArgs = switch @config 'cargoCommand'
       when 'check' then ['check']
