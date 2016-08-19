@@ -30,7 +30,7 @@ class LinterRust
       stdout = (data) ->
         console.log data if do atom.inDevMode
       stderr = (err) ->
-        if err.indexOf('does not have these features')
+        if err.indexOf('does not have these features') >= 0
           atom.notifications.addError "Invalid specified features",
             detail: "#{err}"
             dismissable: true
