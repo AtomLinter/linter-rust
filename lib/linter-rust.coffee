@@ -215,7 +215,7 @@ class LinterRust
 
   ableToJSONErrors: () =>
     rustcPath = (@config 'rustcPath').trim()
-    result = spawn.execSync rustcPath + ' --version'
+    result = spawn.execSync rustcPath + ' --version', {stdio: 'pipe' }
     match = XRegExp.exec result, @patternRustcVersion
     return match and match.nightly and match.date > '2016-08-08'
 
