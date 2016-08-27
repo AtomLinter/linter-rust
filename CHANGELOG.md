@@ -1,3 +1,10 @@
+# 0.5.5
+* Update atom-package-deps to version 4.3.0
+* Fix #70 (@Maplicant)
+
+# 0.5.4
+* Fix indexOf check (@benstreb)
+
 # 0.5.2
 * Removed default values for features specified, fix #65 (@White-Oak)
 
