@@ -51,10 +51,7 @@ module.exports =
       description: "Lint test code, when using `rustc`"
 
   activate: ->
-    console.log 'Linter-Rust: package loaded,
-                ready to get initialized by AtomLinter.'
-
-    do require('atom-package-deps').install
+    require('atom-package-deps').install 'linter-rust'
 
     @subscriptions = new CompositeDisposable
 
@@ -78,6 +75,9 @@ module.exports =
 
     @subscriptions.add atom.config.observe 'linter-rust.jobsNumber', (jobsNumber) =>
       @jobsNumber = jobsNumber
+
+    console.log 'Linter-Rust: package loaded,
+                ready to get initialized by AtomLinter.'
 
   deactivate: ->
     @subscriptions.dispose()
