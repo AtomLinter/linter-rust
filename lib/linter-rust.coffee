@@ -21,8 +21,9 @@ class LinterRust
       file = @initCmd do textEditor.getPath
       curDir = path.dirname file
       PATH = path.dirname @cmd[0]
-      options = JSON.parse JSON.stringify process.env
-      options.PATH = PATH + path.delimiter + options.PATH
+      options = new Object
+      options.env = JSON.parse JSON.stringify process.env
+      options.env.PATH = PATH + path.delimiter + options.env.PATH
       options.cwd = curDir
       command = @cmd[0]
       args = @cmd.slice 1
@@ -34,6 +35,11 @@ class LinterRust
           atom.notifications.addError "Invalid specified features",
             detail: "#{err}"
             dismissable: true
+        else
+          if do atom.inDevMode
+            atom.notifications.addError "Something wrong",
+              detail: "#{err}"
+              dismissable: true
         results.push err
 
       exit = (code) =>
@@ -49,6 +55,9 @@ class LinterRust
         else
           resolve []
 
+      if do @ableToJSONErrors
+        additional = if options.env.RUSTFLAGS? then ' ' + options.env.RUSTFLAGS else ''
+        options.env.RUSTFLAGS = '--error-format=json' + additional
       @lintProcess = new BufferedProcess({command, args, options, stdout, stderr, exit})
       @lintProcess.onWillThrowError ({error, handle}) ->
         atom.notifications.addError "Failed to run #{command}",
@@ -192,6 +201,7 @@ class LinterRust
         @cmd.push path.join path.dirname(cargoManifestPath), @cargoDependencyDir
       @cmd = @cmd.concat @compilationFeatures(false)
       @cmd = @cmd.concat [editingFile]
+      @cmd = @cmd.concat ['--error-format=json'] if do @ableToJSONErrors
       return editingFile
     else
       @cmd = @buildCargoPath cargoPath
@@ -199,7 +209,6 @@ class LinterRust
         .concat ['-j', @config('jobsNumber')]
       @cmd = @cmd.concat @compilationFeatures(true)
       @cmd = @cmd.concat ['--manifest-path', cargoManifestPath]
-      @cmd = @cmd.concat ['--','--error-format=json'] if do @ableToJSONErrors
       return cargoManifestPath
 
   compilationFeatures: (cargo) =>
