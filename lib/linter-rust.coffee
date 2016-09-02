@@ -8,6 +8,7 @@ spawn = require ('child_process')
 class LinterRust
   cargoDependencyDir: "target/debug/deps"
   lintProcess: null
+  cachedAbleToJsonErrors: null
   pattern: XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
     (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
     ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
@@ -21,11 +22,14 @@ class LinterRust
       file = @initCmd do textEditor.getPath
       curDir = path.dirname file
       PATH = path.dirname @cmd[0]
-      options = JSON.parse JSON.stringify process.env
-      options.PATH = PATH + path.delimiter + options.PATH
+      options =
+        env: JSON.parse JSON.stringify process.env
+      options.env.PATH = PATH + path.delimiter + options.env.PATH
       options.cwd = curDir
       command = @cmd[0]
       args = @cmd.slice 1
+      @cachedAbleToJsonErrors = null
+      @cachedAbleToJsonErrors = do @ableToJSONErrors
 
       stdout = (data) ->
         console.log data if do atom.inDevMode
@@ -34,6 +38,12 @@ class LinterRust
           atom.notifications.addError "Invalid specified features",
             detail: "#{err}"
             dismissable: true
+        else
+          if do atom.inDevMode
+            atom.notifications.addWarning "Output from stderr while linting",
+              detail: "#{err}"
+              description: "This is shown because Atom is running in dev-mode and probably not an actual error"
+              dismissable: true
         results.push err
 
       exit = (code) =>
@@ -49,6 +59,9 @@ class LinterRust
         else
           resolve []
 
+      if do @ableToJSONErrors
+        additional = if options.env.RUSTFLAGS? then ' ' + options.env.RUSTFLAGS else ''
+        options.env.RUSTFLAGS = '--error-format=json' + additional
       @lintProcess = new BufferedProcess({command, args, options, stdout, stderr, exit})
       @lintProcess.onWillThrowError ({error, handle}) ->
         atom.notifications.addError "Failed to run #{command}",
@@ -192,6 +205,7 @@ class LinterRust
         @cmd.push path.join path.dirname(cargoManifestPath), @cargoDependencyDir
       @cmd = @cmd.concat @compilationFeatures(false)
       @cmd = @cmd.concat [editingFile]
+      @cmd = @cmd.concat ['--error-format=json'] if do @ableToJSONErrors
       return editingFile
     else
       @cmd = @buildCargoPath cargoPath
@@ -199,7 +213,6 @@ class LinterRust
         .concat ['-j', @config('jobsNumber')]
       @cmd = @cmd.concat @compilationFeatures(true)
       @cmd = @cmd.concat ['--manifest-path', cargoManifestPath]
-      @cmd = @cmd.concat ['--','--error-format=json'] if do @ableToJSONErrors
       return cargoManifestPath
 
   compilationFeatures: (cargo) =>
@@ -214,6 +227,7 @@ class LinterRust
         result
 
   ableToJSONErrors: () =>
+    return @cachedAbleToJsonErrors if @cachedAbleToJsonErrors?
     rustcPath = (@config 'rustcPath').trim()
     result = spawn.execSync rustcPath + ' --version', {stdio: 'pipe' }
     match = XRegExp.exec result, @patternRustcVersion
