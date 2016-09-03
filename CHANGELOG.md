@@ -1,3 +1,6 @@
+# 0.5.6
+* Fixed the way json errors are requested from cargo & rustc, fix #69 (@White-Oak)
+
 # 0.5.5
 * Update atom-package-deps to version 4.3.0
 * Fix #70 (@Maplicant)
