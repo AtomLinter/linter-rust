@@ -1,3 +1,6 @@
+# 0.5.7
+* Assume non-nightly versions >= 1.12.0, fix #78 (@jviide)
+
 # 0.5.6
 * Fixed the way json errors are requested from cargo & rustc, fix #69 (@White-Oak)
 
