@@ -3,6 +3,7 @@ path = require 'path'
 {BufferedProcess} = require 'atom'
 XRegExp = require 'xregexp'
 spawn = require ('child_process')
+semver = require 'semver'
 
 
 class LinterRust
@@ -13,8 +14,8 @@ class LinterRust
     (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
     ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
     (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
-  patternRustcVersion: XRegExp('rustc 1.\\d+.\\d+(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
-                                \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\)')
+  patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
+                                \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\))?')
 
   lint: (textEditor) =>
     return new Promise (resolve, reject) =>
@@ -231,7 +232,12 @@ class LinterRust
     rustcPath = (@config 'rustcPath').trim()
     result = spawn.execSync rustcPath + ' --version', {stdio: 'pipe' }
     match = XRegExp.exec result, @patternRustcVersion
-    return match and match.nightly and match.date > '2016-08-08'
+    if match and match.nightly and match.date > '2016-08-08'
+      true
+    else if match and not match.nightly and semver.gte(match.version, '1.12.0')
+      true
+    else
+      false
 
   locateCargo: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
