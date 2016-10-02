@@ -6,16 +6,22 @@ spawn = require ('child_process')
 semver = require 'semver'
 
 
+pattern = XRegExp(
+  '(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
+  (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
+  ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
+  (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's'
+)
+patternRustcVersion = XRegExp(
+  'rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
+  \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\))?'
+)
+
+
 class LinterRust
   cargoDependencyDir: "target/debug/deps"
   lintProcess: null
   cachedAbleToJsonErrors: null
-  pattern: XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
-    (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
-    ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
-    (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
-  patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
-                                \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\))?')
 
   lint: (textEditor) =>
     return new Promise (resolve, reject) =>
@@ -105,7 +111,7 @@ class LinterRust
 
   parse: (output) =>
     elements = []
-    XRegExp.forEach output, @pattern, (match) ->
+    XRegExp.forEach output, pattern, (match) ->
       if match.from_col == match.to_col
         match.to_col = parseInt(match.to_col) + 1
       range = [
@@ -231,7 +237,7 @@ class LinterRust
     return @cachedAbleToJsonErrors if @cachedAbleToJsonErrors?
     rustcPath = (@config 'rustcPath').trim()
     result = spawn.execSync rustcPath + ' --version', {stdio: 'pipe' }
-    match = XRegExp.exec result, @patternRustcVersion
+    match = XRegExp.exec result, patternRustcVersion
     if match and match.nightly and match.date > '2016-08-08'
       true
     else if match and not match.nightly and semver.gte(match.version, '1.12.0')
