@@ -30,7 +30,7 @@ class LinterRust
     @subscriptions.add atom.config.observe 'linter-rust.rustcPath',
     (rustcPath) =>
       rustcPath = do rustcPath.trim if rustcPath
-      @rustcPath = do rustcPath.trim
+      @rustcPath = rustcPath
 
     @subscriptions.add atom.config.observe 'linter-rust.cargoPath',
     (cargoPath) =>
