@@ -50,37 +50,9 @@ module.exports =
       default: false
       description: "Lint test code, when using `rustc`"
 
+
   activate: ->
     require('atom-package-deps').install 'linter-rust'
-
-    @subscriptions = new CompositeDisposable
-
-    @subscriptions.add atom.config.observe 'linter-rust.rustcPath', (rustcPath) =>
-      @rustcPath = rustcPath
-
-    @subscriptions.add atom.config.observe 'linter-rust.rustcBuildTest', (rustcBuildTest) =>
-      @rustcBuildTest = rustcBuildTest
-
-    @subscriptions.add atom.config.observe 'linter-rust.cargoPath', (cargoPath) =>
-      @cargoPath = cargoPath
-
-    @subscriptions.add atom.config.observe 'linter-rust.cargoPath', (cargoCommand) =>
-      @cargoCommand = cargoCommand
-
-    @subscriptions.add atom.config.observe 'linter-rust.useCargo', (useCargo) =>
-      @useCargo = useCargo
-
-    @subscriptions.add atom.config.observe 'linter-rust.cargoManifestFilename', (cargoManifestFilename) =>
-      @cargoManifestFilename = cargoManifestFilename
-
-    @subscriptions.add atom.config.observe 'linter-rust.jobsNumber', (jobsNumber) =>
-      @jobsNumber = jobsNumber
-
-    console.log 'Linter-Rust: package loaded,
-                ready to get initialized by AtomLinter.'
-
-  deactivate: ->
-    @subscriptions.dispose()
 
 
   provideLinter: ->

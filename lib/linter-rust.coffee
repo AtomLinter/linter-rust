@@ -2,7 +2,7 @@ fs = require 'fs'
 path = require 'path'
 spawn = require ('child_process')
 semver = require 'semver'
-{BufferedProcess} = require 'atom'
+{BufferedProcess, CompositeDisposable} = require 'atom'
 XRegExp = require 'xregexp'
 
 
@@ -22,6 +22,52 @@ class LinterRust
   cargoDependencyDir: "target/debug/deps"
   lintProcess: null
   cachedAbleToJsonErrors: null
+
+
+  constructor: ->
+    @subscriptions = new CompositeDisposable
+
+    @subscriptions.add atom.config.observe 'linter-rust.rustcPath',
+    (rustcPath) =>
+      rustcPath = do rustcPath.trim if rustcPath
+      @rustcPath = do rustcPath.trim
+
+    @subscriptions.add atom.config.observe 'linter-rust.cargoPath',
+    (cargoPath) =>
+      @cargoPath = cargoPath
+
+    @subscriptions.add atom.config.observe 'linter-rust.useCargo',
+    (useCargo) =>
+      @useCargo = useCargo
+
+    @subscriptions.add atom.config.observe 'linter-rust.cargoCommand',
+    (cargoCommand) =>
+      @cargoCommand = cargoCommand
+
+    @subscriptions.add atom.config.observe 'linter-rust.rustcBuildTest',
+    (rustcBuildTest) =>
+      @rustcBuildTest = rustcBuildTest
+
+    @subscriptions.add atom.config.observe 'linter-rust.cargoManifestFilename',
+    (cargoManifestFilename) =>
+      @cargoManifestFilename = cargoManifestFilename
+
+    @subscriptions.add atom.config.observe 'linter-rust.jobsNumber',
+    (jobsNumber) =>
+      @jobsNumber = jobsNumber
+
+    @subscriptions.add atom.config.observe 'linter-rust.disabledWarnings',
+    (disabledWarnings) =>
+      @disabledWarnings = disabledWarnings
+
+    @subscriptions.add atom.config.observe 'linter-rust.specifiedFeatures',
+    (specifiedFeatures) =>
+      @specifiedFeatures = specifiedFeatures
+
+
+  destroy: ->
+    do @subscriptions.dispose
+
 
   lint: (textEditor) =>
     return new Promise (resolve, reject) =>
@@ -77,6 +123,7 @@ class LinterRust
         handle()
         resolve []
 
+
   parseJSON: (results) =>
     elements = []
     for result in results
@@ -109,6 +156,7 @@ class LinterRust
           elements.push element
     @buildMessages(elements)
 
+
   parse: (output) =>
     elements = []
     XRegExp.forEach output, pattern, (match) ->
@@ -131,10 +179,10 @@ class LinterRust
       elements.push element
     @buildMessages elements
 
+
   buildMessages: (elements) =>
     messages = []
     lastMessage = null
-    disabledWarnings = @config 'disabledWarnings'
     for element in elements
       switch element.type
         when 'info', 'trace', 'note'
@@ -149,9 +197,9 @@ class LinterRust
         when 'warning'
           # If the message is warning and user enabled disabling warnings
           # Check if this warning is disabled
-          if disabledWarnings and disabledWarnings.length > 0
+          if @disabledWarnings and @disabledWarnings.length > 0
             messageIsDisabledLint = false
-            for disabledWarning in disabledWarnings
+            for disabledWarning in @disabledWarnings
               # Find a disabled lint in warning message
               if element.message.indexOf(disabledWarning) >= 0
                 messageIsDisabledLint = true
@@ -167,6 +215,7 @@ class LinterRust
           lastMessage = @constructMessage "Error", element
           messages.push lastMessage
     return messages
+
 
   constructMessage: (type, element) ->
     message =
@@ -186,26 +235,20 @@ class LinterRust
     message
 
 
-  config: (key) ->
-    atom.config.get "linter-rust.#{key}"
-
-
   initCmd: (editingFile) =>
-    cargoManifestPath = @locateCargo path.dirname editingFile
-    rustcPath = (@config 'rustcPath').trim()
-    rustcArgs = switch @config 'rustcBuildTest'
+    rustcArgs = switch @rustcBuildTest
       when true then ['--cfg', 'test', '-Z', 'no-trans', '--color', 'never']
       else ['-Z', 'no-trans', '--color', 'never']
-    cargoPath = (@config 'cargoPath').trim()
-    cargoArgs = switch @config 'cargoCommand'
+    cargoArgs = switch @cargoCommand
       when 'check' then ['check']
       when 'test' then ['test', '--no-run']
       when 'rustc' then ['rustc', '-Zno-trans', '--color', 'never']
       when 'clippy' then ['clippy']
       else ['build']
 
-    if not @config('useCargo') or not cargoManifestPath
-      @cmd = [rustcPath]
+    cargoManifestPath = @locateCargo path.dirname editingFile
+    if not @useCargo or not cargoManifestPath
+      @cmd = [@rustcPath]
         .concat rustcArgs
       if cargoManifestPath
         @cmd.push '-L'
@@ -215,28 +258,28 @@ class LinterRust
       @cmd = @cmd.concat ['--error-format=json'] if do @ableToJSONErrors
       return editingFile
     else
-      @cmd = @buildCargoPath cargoPath
+      @cmd = @buildCargoPath @cargoPath
         .concat cargoArgs
-        .concat ['-j', @config('jobsNumber')]
+        .concat ['-j', @jobsNumber]
       @cmd = @cmd.concat @compilationFeatures(true)
       @cmd = @cmd.concat ['--manifest-path', cargoManifestPath]
       return cargoManifestPath
 
+
   compilationFeatures: (cargo) =>
-    features = @config 'specifiedFeatures'
-    if features
+    if @specifiedFeatures
       if cargo
-        ['--features',features.join(' ')]
+        ['--features', @specifiedFeatures.join(' ')]
       else
         result = []
-        cfgs = for f in features
+        cfgs = for f in @specifiedFeatures
           result.push ['--cfg', "feature=\"#{f}\""]
         result
 
+
   ableToJSONErrors: () =>
     return @cachedAbleToJsonErrors if @cachedAbleToJsonErrors?
-    rustcPath = (@config 'rustcPath').trim()
-    result = spawn.execSync rustcPath + ' --version', {stdio: 'pipe' }
+    result = spawn.execSync @rustcPath + ' --version', {stdio: 'pipe' }
     match = XRegExp.exec result, patternRustcVersion
     if match and match.nightly and match.date > '2016-08-08'
       true
@@ -245,22 +288,23 @@ class LinterRust
     else
       false
 
+
   locateCargo: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
-    cargoManifestFilename = @config 'cargoManifestFilename'
     directory = path.resolve curDir
     loop
-      return path.join directory, cargoManifestFilename if fs.existsSync path.join directory, cargoManifestFilename
+      return path.join directory, @cargoManifestFilename if fs.existsSync path.join directory, @cargoManifestFilename
       break if root_dir.test directory
       directory = path.resolve path.join(directory, '..')
     return false
 
 
    buildCargoPath: (cargoPath) =>
-     if (@config 'cargoCommand') == 'clippy' and @usingMultirustForClippy()
+     if @cargoCommand == 'clippy' and @usingMultirustForClippy()
        return ['multirust','run', 'nightly', 'cargo']
      else
        return [cargoPath]
+
 
    usingMultirustForClippy: () =>
      try
