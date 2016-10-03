@@ -1,9 +1,9 @@
 fs = require 'fs'
 path = require 'path'
-{BufferedProcess} = require 'atom'
-XRegExp = require 'xregexp'
 spawn = require ('child_process')
 semver = require 'semver'
+{BufferedProcess} = require 'atom'
+XRegExp = require 'xregexp'
 
 
 pattern = XRegExp(
