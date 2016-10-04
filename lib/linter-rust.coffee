@@ -3,15 +3,61 @@ path = require 'path'
 XRegExp = require 'xregexp'
 semver = require 'semver'
 sb_exec = require 'sb-exec'
+{CompositeDisposable} = require 'atom'
+
+
+pattern: XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
+  (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
+  ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
+  (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
+patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
+                              \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\))?')
 
 class LinterRust
   cargoDependencyDir: "target/debug/deps"
-  pattern: XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
-    (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
-    ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
-    (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
-  patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
-                                \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\))?')
+
+  constructor: ->
+    @subscriptions = new CompositeDisposable
+
+    @subscriptions.add atom.config.observe 'linter-rust.rustcPath',
+    (rustcPath) =>
+      rustcPath = do rustcPath.trim if rustcPath
+      @rustcPath = rustcPath
+
+    @subscriptions.add atom.config.observe 'linter-rust.cargoPath',
+    (cargoPath) =>
+      @cargoPath = cargoPath
+
+    @subscriptions.add atom.config.observe 'linter-rust.useCargo',
+    (useCargo) =>
+      @useCargo = useCargo
+
+    @subscriptions.add atom.config.observe 'linter-rust.cargoCommand',
+    (cargoCommand) =>
+      @cargoCommand = cargoCommand
+
+    @subscriptions.add atom.config.observe 'linter-rust.rustcBuildTest',
+    (rustcBuildTest) =>
+      @rustcBuildTest = rustcBuildTest
+
+    @subscriptions.add atom.config.observe 'linter-rust.cargoManifestFilename',
+    (cargoManifestFilename) =>
+      @cargoManifestFilename = cargoManifestFilename
+
+    @subscriptions.add atom.config.observe 'linter-rust.jobsNumber',
+    (jobsNumber) =>
+      @jobsNumber = jobsNumber
+
+    @subscriptions.add atom.config.observe 'linter-rust.disabledWarnings',
+    (disabledWarnings) =>
+      @disabledWarnings = disabledWarnings
+
+    @subscriptions.add atom.config.observe 'linter-rust.specifiedFeatures',
+    (specifiedFeatures) =>
+      @specifiedFeatures = specifiedFeatures
+
+  destroy: ->
+    do @subscriptions.dispose
 
   lint: (textEditor) =>
     curDir = path.dirname textEditor.getPath()
@@ -112,7 +158,7 @@ class LinterRust
 
   parse: (output) =>
     elements = []
-    XRegExp.forEach output, @pattern, (match) ->
+    XRegExp.forEach output, pattern, (match) ->
       if match.from_col == match.to_col
         match.to_col = parseInt(match.to_col) + 1
       range = [
@@ -132,10 +178,10 @@ class LinterRust
       elements.push element
     @buildMessages elements
 
+
   buildMessages: (elements) =>
     messages = []
     lastMessage = null
-    disabledWarnings = @config 'disabledWarnings'
     for element in elements
       switch element.type
         when 'info', 'trace', 'note'
@@ -150,9 +196,9 @@ class LinterRust
         when 'warning'
           # If the message is warning and user enabled disabling warnings
           # Check if this warning is disabled
-          if disabledWarnings and disabledWarnings.length > 0
+          if @disabledWarnings and @disabledWarnings.length > 0
             messageIsDisabledLint = false
-            for disabledWarning in disabledWarnings
+            for disabledWarning in @disabledWarnings
               # Find a disabled lint in warning message
               if element.message.indexOf(disabledWarning) >= 0
                 messageIsDisabledLint = true
@@ -168,6 +214,7 @@ class LinterRust
           lastMessage = @constructMessage "Error", element
           messages.push lastMessage
     return messages
+
 
   constructMessage: (type, element) ->
     message =
@@ -186,24 +233,18 @@ class LinterRust
           range: children.range or element.range
     message
 
-  config: (key) ->
-    atom.config.get "linter-rust.#{key}"
-
   initCmd: (editingFile, ableToJSONErrors) =>
-    cargoManifestPath = @locateCargo path.dirname editingFile
-    rustcPath = (@config 'rustcPath').trim()
-    rustcArgs = switch @config 'rustcBuildTest'
+    rustcArgs = switch @rustcBuildTest
       when true then ['--cfg', 'test', '-Z', 'no-trans', '--color', 'never']
       else ['-Z', 'no-trans', '--color', 'never']
-    cargoPath = (@config 'cargoPath').trim()
-    cargoArgs = switch @config 'cargoCommand'
+    cargoArgs = switch @cargoCommand
       when 'check' then ['check']
       when 'test' then ['test', '--no-run']
       when 'rustc' then ['rustc', '-Zno-trans', '--color', 'never']
       when 'clippy' then ['clippy']
       else ['build']
 
-    if not @config('useCargo') or not cargoManifestPath
+    if not @useCargo or not cargoManifestPath
       Promise.resolve().then () =>
         cmd = [rustcPath]
           .concat rustcArgs
@@ -226,20 +267,18 @@ class LinterRust
         [cargoManifestPath, cmd]
 
   compilationFeatures: (cargo) =>
-    features = @config 'specifiedFeatures'
-    if features.length > 0
+    if @specifiedFeatures > 0
       if cargo
-        ['--features',features.join(' ')]
+        ['--features', @specifiedFeatures.join(' ')]
       else
         result = []
-        cfgs = for f in features
+        cfgs = for f in @specifiedFeatures
           result.push ['--cfg', "feature=\"#{f}\""]
         result
 
   ableToJSONErrors: (curDir) =>
-    rustcPath = (@config 'rustcPath').trim()
     # current dir is set to handle overrides
-    sb_exec.exec(rustcPath, ['--version'], {stream: 'stdout', cwd: curDir}).then (stdout) =>
+    sb_exec.exec(@rustcPath, ['--version'], {stream: 'stdout', cwd: curDir, stdio: 'pipe'}).then (stdout) =>
       match = XRegExp.exec stdout, @patternRustcVersion
       if match and match.nightly and match.date > '2016-08-08'
         true
@@ -250,17 +289,16 @@ class LinterRust
 
   locateCargo: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
-    cargoManifestFilename = @config 'cargoManifestFilename'
     directory = path.resolve curDir
     loop
-      return path.join directory, cargoManifestFilename if fs.existsSync path.join directory, cargoManifestFilename
+      return path.join directory, @cargoManifestFilename if fs.existsSync path.join directory, @cargoManifestFilename
       break if root_dir.test directory
       directory = path.resolve path.join(directory, '..')
     return false
 
   buildCargoPath: (cargoPath) =>
     @usingMultitoolForClippy().then (canUseMultirust) =>
-      if (@config 'cargoCommand') == 'clippy' and canUseMultirust.result
+      if @cargoCommand == 'clippy' and canUseMultirust.result
         [canUseMultirust.tool, 'run', 'nightly', 'cargo']
       else
         [cargoPath]
