@@ -6,14 +6,13 @@ sb_exec = require 'sb-exec'
 {CompositeDisposable} = require 'atom'
 
 
-pattern: XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
-  (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
-  ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
-  (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
-patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
-                              \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\))?')
-
 class LinterRust
+  pattern: XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
+    (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
+    ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
+    (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
+  patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
+                                \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\))?')
   cargoDependencyDir: "target/debug/deps"
 
   constructor: ->
@@ -64,10 +63,7 @@ class LinterRust
     @ableToJSONErrors(curDir).then (ableToJSONErrors) =>
       @initCmd(textEditor.getPath(), ableToJSONErrors).then (result) =>
         [file, cmd] = result
-        curDir = path.dirname file
-        PATH = path.dirname cmd[0]
         env = JSON.parse JSON.stringify process.env
-        env.PATH = PATH + path.delimiter + env.PATH
         cwd = curDir
         command = cmd[0]
         args = cmd.slice 1
@@ -158,7 +154,7 @@ class LinterRust
 
   parse: (output) =>
     elements = []
-    XRegExp.forEach output, pattern, (match) ->
+    XRegExp.forEach output, @pattern, (match) ->
       if match.from_col == match.to_col
         match.to_col = parseInt(match.to_col) + 1
       range = [
@@ -177,7 +173,6 @@ class LinterRust
         range: range
       elements.push element
     @buildMessages elements
-
 
   buildMessages: (elements) =>
     messages = []
@@ -215,7 +210,6 @@ class LinterRust
           messages.push lastMessage
     return messages
 
-
   constructMessage: (type, element) ->
     message =
       type: type
@@ -244,30 +238,30 @@ class LinterRust
       when 'clippy' then ['clippy']
       else ['build']
 
-    if not @useCargo or not cargoManifestPath
+    if not @useCargo or not @cargoManifestFilename
       Promise.resolve().then () =>
-        cmd = [rustcPath]
+        cmd = [@rustcPath]
           .concat rustcArgs
-        if cargoManifestPath
+        if @cargoManifestFilename
           cmd.push '-L'
-          cmd.push path.join path.dirname(cargoManifestPath), @cargoDependencyDir
+          cmd.push path.join path.dirname(@cargoManifestFilename), @cargoDependencyDir
         compilationFeatures = @compilationFeatures(false)
         cmd = cmd.concat compilationFeatures if compilationFeatures
         cmd = cmd.concat [editingFile]
         cmd = cmd.concat ['--error-format=json'] if ableToJSONErrors
         [editingFile, cmd]
     else
-      @buildCargoPath(cargoPath).then (cmd) =>
+      @buildCargoPath(@cargoPath).then (cmd) =>
         compilationFeatures = @compilationFeatures(true)
         cmd = cmd
           .concat cargoArgs
-          .concat ['-j', @config('jobsNumber')]
+          .concat ['-j', @jobsNumber]
         cmd = cmd.concat compilationFeatures if compilationFeatures
-        cmd = cmd.concat ['--manifest-path', cargoManifestPath]
-        [cargoManifestPath, cmd]
+        cmd = cmd.concat ['--manifest-path', @cargoManifestFilename]
+        [@cargoManifestFilename, cmd]
 
   compilationFeatures: (cargo) =>
-    if @specifiedFeatures > 0
+    if @specifiedFeatures.length > 0
       if cargo
         ['--features', @specifiedFeatures.join(' ')]
       else
@@ -278,14 +272,17 @@ class LinterRust
 
   ableToJSONErrors: (curDir) =>
     # current dir is set to handle overrides
+
     sb_exec.exec(@rustcPath, ['--version'], {stream: 'stdout', cwd: curDir, stdio: 'pipe'}).then (stdout) =>
-      match = XRegExp.exec stdout, @patternRustcVersion
-      if match and match.nightly and match.date > '2016-08-08'
-        true
-      else if match and not match.nightly and semver.gte(match.version, '1.12.0')
-        true
-      else
-        false
+      console.log stdout
+      try
+        match = XRegExp.exec(stdout, @patternRustcVersion)
+        if match and match.nightly and match.date > '2016-08-08'
+          true
+        else if match and not match.nightly and semver.gte(match.version, '1.12.0')
+          true
+        else
+          false
 
   locateCargo: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
