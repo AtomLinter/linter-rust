@@ -1,28 +1,19 @@
 fs = require 'fs'
 path = require 'path'
-spawn = require ('child_process')
-semver = require 'semver'
-{BufferedProcess, CompositeDisposable} = require 'atom'
 XRegExp = require 'xregexp'
-
-
-pattern = XRegExp(
-  '(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
-  (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
-  ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
-  (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's'
-)
-patternRustcVersion = XRegExp(
-  'rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
-  \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\))?'
-)
+semver = require 'semver'
+sb_exec = require 'sb-exec'
+{CompositeDisposable} = require 'atom'
 
 
 class LinterRust
+  pattern: XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
+    (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
+    ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
+    (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
+  patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
+                                \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\))?')
   cargoDependencyDir: "target/debug/deps"
-  lintProcess: null
-  cachedAbleToJsonErrors: null
-
 
   constructor: ->
     @subscriptions = new CompositeDisposable
@@ -64,102 +55,106 @@ class LinterRust
     (specifiedFeatures) =>
       @specifiedFeatures = specifiedFeatures
 
-
   destroy: ->
     do @subscriptions.dispose
 
-
   lint: (textEditor) =>
-    return new Promise (resolve, reject) =>
-      results = []
-      file = @initCmd do textEditor.getPath
-      curDir = path.dirname file
-      PATH = path.dirname @cmd[0]
-      options =
-        env: JSON.parse JSON.stringify process.env
-      options.env.PATH = PATH + path.delimiter + options.env.PATH
-      options.cwd = curDir
-      command = @cmd[0]
-      args = @cmd.slice 1
-      @cachedAbleToJsonErrors = null
-      @cachedAbleToJsonErrors = do @ableToJSONErrors
+    curDir = path.dirname textEditor.getPath()
+    @ableToJSONErrors(curDir).then (ableToJSONErrors) =>
+      @initCmd(textEditor.getPath(), ableToJSONErrors).then (result) =>
+        [file, cmd] = result
+        env = JSON.parse JSON.stringify process.env
+        cwd = curDir
+        command = cmd[0]
+        args = cmd.slice 1
 
-      stdout = (data) ->
-        console.log data if do atom.inDevMode
-      stderr = (err) ->
-        if err.indexOf('does not have these features') >= 0
-          atom.notifications.addError "Invalid specified features",
-            detail: "#{err}"
-            dismissable: true
-        else
-          if do atom.inDevMode
-            atom.notifications.addWarning "Output from stderr while linting",
-              detail: "#{err}"
-              description: "This is shown because Atom is running in dev-mode and probably not an actual error"
+        if ableToJSONErrors
+          additional = if env.RUSTFLAGS? then ' ' + env.RUSTFLAGS else ''
+          env.RUSTFLAGS = '--error-format=json' + additional
+
+        sb_exec.exec(command, args, {env: env, cwd: cwd, stream: 'both'})
+          .then (result) =>
+            {stdout, stderr, exitCode} = result
+            # first, check if an output says specified features are invalid
+            if stderr.indexOf('does not have these features') >= 0
+              atom.notifications.addError "Invalid specified features",
+                detail: "#{stderr}"
+                dismissable: true
+              []
+            # then, if exit code looks okay, process an output
+            else if exitCode is 101 or exitCode is 0
+              # in dev mode show message boxes with output
+              showDevModeWarning = (stream, message) ->
+                atom.notifications.addWarning "Output from #{stream} while linting",
+                  detail: "#{message}"
+                  description: "This is shown because Atom is running in dev-mode and probably not an actual error"
+                  dismissable: true
+              if do atom.inDevMode
+                showDevModeWarning('stderr', stderr) if stderr
+                showDevModeWarning('stdout', stdout) if stdout
+
+              # call a needed parser
+              messages = unless ableToJSONErrors
+                @parse stderr
+              else
+                @parseJSON stderr
+
+              # correct file paths
+              messages.forEach (message) ->
+                if !(path.isAbsolute message.filePath)
+                  message.filePath = path.join curDir, message.filePath
+              messages
+            else
+              # whoops, we're in trouble -- let's output as much as we can
+              atom.notifications.addError "Failed to run #{command} with exit code #{exitCode}",
+                detail: "with args:\n #{args.join(' ')}\nSee console for more information"
+                dismissable: true
+              console.log "stdout:"
+              console.log stdout
+              console.log "stderr:"
+              console.log stderr
+              []
+          .catch (error) ->
+            console.log error
+            atom.notifications.addError "Failed to run #{command}",
+              detail: "#{error.message}"
               dismissable: true
-        results.push err
+            []
 
-      exit = (code) =>
-        if code is 101 or code is 0
-          unless do @ableToJSONErrors
-            messages = @parse results.join('')
-          else
-            messages = @parseJSON results
-          messages.forEach (message) ->
-            if !(path.isAbsolute message.filePath)
-              message.filePath = path.join curDir, message.filePath
-          resolve messages
-        else
-          resolve []
-
-      if do @ableToJSONErrors
-        additional = if options.env.RUSTFLAGS? then ' ' + options.env.RUSTFLAGS else ''
-        options.env.RUSTFLAGS = '--error-format=json' + additional
-      @lintProcess = new BufferedProcess({command, args, options, stdout, stderr, exit})
-      @lintProcess.onWillThrowError ({error, handle}) ->
-        atom.notifications.addError "Failed to run #{command}",
-          detail: "#{error.message}"
-          dismissable: true
-        handle()
-        resolve []
-
-
-  parseJSON: (results) =>
+  parseJSON: (output) =>
     elements = []
+    results = output.split '\n'
     for result in results
-      subresults = result.split '\n'
-      for result in subresults
-        if result.startsWith '{'
-          input = JSON.parse result
-          continue unless input.spans
-          primary_span = input.spans.find (span) -> span.is_primary
-          continue unless primary_span
-          range = [
-            [primary_span.line_start - 1, primary_span.column_start - 1],
-            [primary_span.line_end - 1, primary_span.column_end - 1]
-          ]
-          input.level = 'error' if input == 'fatal error'
-          element =
-            type: input.level
-            message: input.message
-            file: primary_span.file_name
-            range: range
-            children: input.children
-          for span in input.spans
-            unless span.is_primary
-              element.children.push
-                message: span.label
-                range: [
-                  [span.line_start - 1, span.column_start - 1],
-                  [span.line_end - 1, span.column_end - 1]
-                ]
-          elements.push element
+      if result.startsWith '{'
+        input = JSON.parse result.trim()
+        continue unless input.spans
+        primary_span = input.spans.find (span) -> span.is_primary
+        continue unless primary_span
+        range = [
+          [primary_span.line_start - 1, primary_span.column_start - 1],
+          [primary_span.line_end - 1, primary_span.column_end - 1]
+        ]
+        input.level = 'error' if input == 'fatal error'
+        element =
+          type: input.level
+          message: input.message
+          file: primary_span.file_name
+          range: range
+          children: input.children
+        for span in input.spans
+          unless span.is_primary
+            element.children.push
+              message: span.label
+              range: [
+                [span.line_start - 1, span.column_start - 1],
+                [span.line_end - 1, span.column_end - 1]
+              ]
+        elements.push element
     @buildMessages(elements)
-
 
   parse: (output) =>
     elements = []
-    XRegExp.forEach output, pattern, (match) ->
+    XRegExp.forEach output, @pattern, (match) ->
       if match.from_col == match.to_col
         match.to_col = parseInt(match.to_col) + 1
       range = [
@@ -178,7 +173,6 @@ class LinterRust
         range: range
       elements.push element
     @buildMessages elements
-
 
   buildMessages: (elements) =>
     messages = []
@@ -216,7 +210,6 @@ class LinterRust
           messages.push lastMessage
     return messages
 
-
   constructMessage: (type, element) ->
     message =
       type: type
@@ -234,8 +227,7 @@ class LinterRust
           range: children.range or element.range
     message
 
-
-  initCmd: (editingFile) =>
+  initCmd: (editingFile, ableToJSONErrors) =>
     rustcArgs = switch @rustcBuildTest
       when true then ['--cfg', 'test', '-Z', 'no-trans', '--color', 'never']
       else ['-Z', 'no-trans', '--color', 'never']
@@ -246,28 +238,30 @@ class LinterRust
       when 'clippy' then ['clippy']
       else ['build']
 
-    cargoManifestPath = @locateCargo path.dirname editingFile
-    if not @useCargo or not cargoManifestPath
-      @cmd = [@rustcPath]
-        .concat rustcArgs
-      if cargoManifestPath
-        @cmd.push '-L'
-        @cmd.push path.join path.dirname(cargoManifestPath), @cargoDependencyDir
-      @cmd = @cmd.concat @compilationFeatures(false)
-      @cmd = @cmd.concat [editingFile]
-      @cmd = @cmd.concat ['--error-format=json'] if do @ableToJSONErrors
-      return editingFile
+    if not @useCargo or not @cargoManifestFilename
+      Promise.resolve().then () =>
+        cmd = [@rustcPath]
+          .concat rustcArgs
+        if @cargoManifestFilename
+          cmd.push '-L'
+          cmd.push path.join path.dirname(@cargoManifestFilename), @cargoDependencyDir
+        compilationFeatures = @compilationFeatures(false)
+        cmd = cmd.concat compilationFeatures if compilationFeatures
+        cmd = cmd.concat [editingFile]
+        cmd = cmd.concat ['--error-format=json'] if ableToJSONErrors
+        [editingFile, cmd]
     else
-      @cmd = @buildCargoPath @cargoPath
-        .concat cargoArgs
-        .concat ['-j', @jobsNumber]
-      @cmd = @cmd.concat @compilationFeatures(true)
-      @cmd = @cmd.concat ['--manifest-path', cargoManifestPath]
-      return cargoManifestPath
-
+      @buildCargoPath(@cargoPath).then (cmd) =>
+        compilationFeatures = @compilationFeatures(true)
+        cmd = cmd
+          .concat cargoArgs
+          .concat ['-j', @jobsNumber]
+        cmd = cmd.concat compilationFeatures if compilationFeatures
+        cmd = cmd.concat ['--manifest-path', @cargoManifestFilename]
+        [@cargoManifestFilename, cmd]
 
   compilationFeatures: (cargo) =>
-    if @specifiedFeatures
+    if @specifiedFeatures.length > 0
       if cargo
         ['--features', @specifiedFeatures.join(' ')]
       else
@@ -276,18 +270,19 @@ class LinterRust
           result.push ['--cfg', "feature=\"#{f}\""]
         result
 
+  ableToJSONErrors: (curDir) =>
+    # current dir is set to handle overrides
 
-  ableToJSONErrors: () =>
-    return @cachedAbleToJsonErrors if @cachedAbleToJsonErrors?
-    result = spawn.execSync @rustcPath + ' --version', {stdio: 'pipe' }
-    match = XRegExp.exec result, patternRustcVersion
-    if match and match.nightly and match.date > '2016-08-08'
-      true
-    else if match and not match.nightly and semver.gte(match.version, '1.12.0')
-      true
-    else
-      false
-
+    sb_exec.exec(@rustcPath, ['--version'], {stream: 'stdout', cwd: curDir, stdio: 'pipe'}).then (stdout) =>
+      console.log stdout
+      try
+        match = XRegExp.exec(stdout, @patternRustcVersion)
+        if match and match.nightly and match.date > '2016-08-08'
+          true
+        else if match and not match.nightly and semver.gte(match.version, '1.12.0')
+          true
+        else
+          false
 
   locateCargo: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
@@ -298,19 +293,24 @@ class LinterRust
       directory = path.resolve path.join(directory, '..')
     return false
 
+  buildCargoPath: (cargoPath) =>
+    @usingMultitoolForClippy().then (canUseMultirust) =>
+      if @cargoCommand == 'clippy' and canUseMultirust.result
+        [canUseMultirust.tool, 'run', 'nightly', 'cargo']
+      else
+        [cargoPath]
 
-   buildCargoPath: (cargoPath) =>
-     if @cargoCommand == 'clippy' and @usingMultirustForClippy()
-       return ['multirust','run', 'nightly', 'cargo']
-     else
-       return [cargoPath]
-
-
-   usingMultirustForClippy: () =>
-     try
-       result = spawn.execSync 'multirust --version'
-       true
-     catch
-       false
+  usingMultitoolForClippy: () =>
+    # Try to use rustup
+    sb_exec.exec 'rustup', ['--version'], {ignoreExitCode: true}
+      .then ->
+        result: true, tool: 'rustup'
+      .catch ->
+        # Try to use odler multirust at least
+        sb_exec.exec 'multirust', ['--version'], {ignoreExitCode: true}
+          .then ->
+            result: true, tool: 'multirust'
+          .catch ->
+            result: false
 
 module.exports = LinterRust
