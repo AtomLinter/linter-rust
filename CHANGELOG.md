@@ -1,3 +1,6 @@
+# 0.6.0
+*  Use asynchronous execs instead of synchronous (@White-Oak)
+
 # 0.5.7
 * Assume non-nightly versions >= 1.12.0, fix #78 (@jviide)
 
