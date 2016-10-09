@@ -64,14 +64,16 @@ class LinterRust
       @initCmd(textEditor.getPath(), ableToJSONErrors).then (result) =>
         [file, cmd] = result
         env = JSON.parse JSON.stringify process.env
+        curDir = path.dirname file
         cwd = curDir
         command = cmd[0]
         args = cmd.slice 1
+        env.PATH = path.dirname(cmd[0]) + path.delimiter + env.PATH
 
         if ableToJSONErrors
-          additional = if env.RUSTFLAGS? then ' ' + env.RUSTFLAGS else ''
-          env.RUSTFLAGS = '--error-format=json' + additional
-
+          if !env.RUSTFLAGS? or !(env.RUSTFLAGS.indexOf('--error-format=json') >= 0)
+            additional = if env.RUSTFLAGS? then ' ' + env.RUSTFLAGS else ''
+            env.RUSTFLAGS = '--error-format=json' + additional
         sb_exec.exec(command, args, {env: env, cwd: cwd, stream: 'both'})
           .then (result) =>
             {stdout, stderr, exitCode} = result
@@ -238,13 +240,14 @@ class LinterRust
       when 'clippy' then ['clippy']
       else ['build']
 
-    if not @useCargo or not @cargoManifestFilename
+    cargoManifestPath = @locateCargo path.dirname editingFile
+    if not @useCargo or not cargoManifestPath
       Promise.resolve().then () =>
         cmd = [@rustcPath]
           .concat rustcArgs
-        if @cargoManifestFilename
+        if cargoManifestPath
           cmd.push '-L'
-          cmd.push path.join path.dirname(@cargoManifestFilename), @cargoDependencyDir
+          cmd.push path.join path.dirname(cargoManifestPath), @cargoDependencyDir
         compilationFeatures = @compilationFeatures(false)
         cmd = cmd.concat compilationFeatures if compilationFeatures
         cmd = cmd.concat [editingFile]
@@ -257,8 +260,8 @@ class LinterRust
           .concat cargoArgs
           .concat ['-j', @jobsNumber]
         cmd = cmd.concat compilationFeatures if compilationFeatures
-        cmd = cmd.concat ['--manifest-path', @cargoManifestFilename]
-        [@cargoManifestFilename, cmd]
+        cmd = cmd.concat ['--manifest-path', cargoManifestPath]
+        [cargoManifestPath, cmd]
 
   compilationFeatures: (cargo) =>
     if @specifiedFeatures.length > 0
