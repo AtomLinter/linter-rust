@@ -1,21 +1,23 @@
 XRegExp = require 'xregexp'
-sb_exec = require 'sb-exec'
 path = require 'path'
+atom_linter = require 'atom-linter'
+CachedResult = require './cached_result'
 
 pattern = XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
   (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
   ((?<error>error|fatal error)|(?<warning>warning)|(?<info>note|help)):\\s+\
   (?<message>.+?)[\n\r]+($|(?=[^\n\r]+:\\d+))', 's')
 
-parseOldMessages = (output, disabledWarnings) ->
+parseOldMessages = (output, {disabledWarnings, textEditor}) ->
   elements = []
   XRegExp.forEach output, pattern, (match) ->
-    if match.from_col == match.to_col
-      match.to_col = parseInt(match.to_col) + 1
-    range = [
-      [match.from_line - 1, match.from_col - 1],
-      [match.to_line - 1, match.to_col - 1]
-    ]
+    range = if match.from_col == match.to_col and match.from_line == match.to_line
+      atom_linter.rangeFromLineNumber(textEditor, Number.parseInt(match.from_line, 10) - 1, Number.parseInt(match.from_col, 10) - 1)
+    else
+      [
+        [match.from_line - 1, match.from_col - 1],
+        [match.to_line - 1, match.to_col - 1]
+      ]
     level = if match.error then 'error'
     else if match.warning then 'warning'
     else if match.info then 'info'
@@ -29,7 +31,7 @@ parseOldMessages = (output, disabledWarnings) ->
     elements.push element
   buildMessages elements, disabledWarnings
 
-parseJsonMessages = (messages, disabledWarnings) ->
+parseJsonMessages = (messages, {disabledWarnings}) ->
   elements = []
   for input in messages
     continue unless input and input.spans
@@ -39,7 +41,7 @@ parseJsonMessages = (messages, disabledWarnings) ->
       [primary_span.line_start - 1, primary_span.column_start - 1],
       [primary_span.line_end - 1, primary_span.column_end - 1]
     ]
-    input.level = 'error' if input == 'fatal error'
+    input.level = 'error' if input.level == 'fatal error'
     element =
       type: input.level
       message: input.message
@@ -57,13 +59,17 @@ parseJsonMessages = (messages, disabledWarnings) ->
     elements.push element
   buildMessages elements, disabledWarnings
 
-parseJsonOutput = (output, disabledWarnings) ->
+parseJsonOutput = (output, {disabledWarnings, additionalFilter} ) ->
   results = output.split('\n').map (message) ->
     message = message.trim()
     if message.startsWith '{'
-      JSON.parse message
+      json = JSON.parse message
+      if additionalFilter?
+        additionalFilter(json)
+      else
+        json
   .filter (m) -> m?
-  parseJsonMessages results, disabledWarnings
+  parseJsonMessages results, {disabledWarnings}
 
 buildMessages = (elements, disabledWarnings) ->
   messages = []
@@ -134,7 +140,36 @@ buildRustcArguments = (linter, paths) ->
     cmd = cmd.concat [editingFile]
     [editingFile, cmd]
 
+cachedUsingMultitoolForClippy = null
+
 buildCargoArguments = (linter, cargoManifestPath) ->
+  buildCargoPath = (cargoPath, cargoCommand) ->
+    # the result is cached to avoid delays
+    if cachedUsingMultitoolForClippy? and do cachedUsingMultitoolForClippy.valid
+      Promise.resolve().then () =>
+        do cachedUsingMultitoolForClippy.getResult
+    else
+      # Decide if should use older multirust or newer rustup
+      usingMultitoolForClippy =
+        atom_linter.exec 'rustup', ['--version'], {ignoreExitCode: true}
+          .then ->
+            result: true, tool: 'rustup'
+          .catch ->
+            # Try to use older multirust at least
+            atom_linter.exec 'multirust', ['--version'], {ignoreExitCode: true}
+              .then ->
+                result: true, tool: 'multirust'
+              .catch ->
+                result: false
+      usingMultitoolForClippy.then (canUseMultirust) ->
+        if cargoCommand == 'clippy' and canUseMultirust.result
+          [canUseMultirust.tool, 'run', 'nightly', 'cargo']
+        else
+          [cargoPath]
+      .then (cached) =>
+        cachedUsingMultitoolForClippy = new CachedResult(cached, 20)
+        cached
+
   cargoArgs = switch linter.cargoCommand
     when 'check' then ['check']
     when 'test' then ['test', '--no-run']
@@ -143,7 +178,7 @@ buildCargoArguments = (linter, cargoManifestPath) ->
     else ['build']
 
   compilationFeatures = linter.compilationFeatures(true)
-  buildCargoPath(linter.cargoPath).then (cmd) ->
+  buildCargoPath(linter.cargoPath, linter.cargoCommand).then (cmd) ->
     cmd = cmd
       .concat cargoArgs
       .concat ['-j', linter.jobsNumber]
@@ -151,34 +186,14 @@ buildCargoArguments = (linter, cargoManifestPath) ->
     cmd = cmd.concat ['--manifest-path', cargoManifestPath]
     [cargoManifestPath, cmd]
 
-buildCargoPath = (cargoPath, cargoCommand) ->
-  usingMultitoolForClippy().then (canUseMultirust) ->
-    if cargoCommand == 'clippy' and canUseMultirust.result
-      [canUseMultirust.tool, 'run', 'nightly', 'cargo']
-    else
-      [cargoPath]
-
-usingMultitoolForClippy = () ->
-  # Try to use rustup
-  sb_exec.exec 'rustup', ['--version'], {ignoreExitCode: true}
-    .then ->
-      result: true, tool: 'rustup'
-    .catch ->
-      # Try to use odler multirust at least
-      sb_exec.exec 'multirust', ['--version'], {ignoreExitCode: true}
-        .then ->
-          result: true, tool: 'multirust'
-        .catch ->
-          result: false
-
 # These define the behabiour of each error mode linter-rust has
 errorModes =
   JSON_RUSTC:
     neededOutput: (stdout, stderr) ->
       stderr
 
-    parse: (output, disabledWarnings) =>
-      parseJsonOutput output, disabledWarnings
+    parse: (output, options) =>
+      parseJsonOutput output, options
 
     buildArguments: (linter, file) ->
       buildRustcArguments(linter, file).then (cmd_res) ->
@@ -190,16 +205,11 @@ errorModes =
     neededOutput: (stdout, stderr) ->
       stdout
 
-    parse: (output, disabledWarnings) ->
-      checkCompilerMessage = (message) ->
-        message = message.trim()
-        if message.startsWith '{'
-          input = JSON.parse message
-          input.message if input? and input.reason == "compiler-message"
-
-      results = output.split '\n'
-      results = results.map(checkCompilerMessage).filter((i) -> i?)
-      parseJsonMessages results, disabledWarnings
+    parse: (output, options) ->
+      options.additionalFilter = (json) ->
+        if input? and input.reason == "compiler-message"
+          input.message
+      parseJsonOutput output, options
 
     buildArguments: (linter, file) ->
       buildCargoArguments(linter, file).then (cmd_res) ->

@@ -2,9 +2,10 @@ fs = require 'fs'
 path = require 'path'
 XRegExp = require 'xregexp'
 semver = require 'semver'
-sb_exec = require 'sb-exec'
 {CompositeDisposable} = require 'atom'
+atom_linter = require 'atom-linter'
 errorModes = require './mode'
+CachedResult = require './cached_result'
 
 class LinterRust
   patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
@@ -71,7 +72,7 @@ class LinterRust
           additional = if env.RUSTFLAGS? then ' ' + env.RUSTFLAGS else ''
           env.RUSTFLAGS = '--error-format=json' + additional
 
-      sb_exec.exec(command, args, {env: env, cwd: cwd, stream: 'both'})
+      atom_linter.exec(command, args, {env: env, cwd: cwd, stream: 'both'})
         .then (result) =>
           {stdout, stderr, exitCode} = result
           # first, check if an output says specified features are invalid
@@ -94,7 +95,7 @@ class LinterRust
 
             # call a needed parser
             output = errorMode.neededOutput(stdout, stderr)
-            messages = errorMode.parse output, @disabledWarnings
+            messages = errorMode.parse output, {@disabledWarnings, textEditor}
 
             # correct file paths
             messages.forEach (message) ->
@@ -120,7 +121,7 @@ class LinterRust
 
   initCmd: (editingFile) =>
     curDir = path.dirname editingFile
-    cargoManifestPath = @locateCargo path.dirname editingFile
+    cargoManifestPath = @locateCargo curDir
     if not @useCargo or not cargoManifestPath
       @decideErrorMode(curDir, 'rustc').then (mode) =>
         mode.buildArguments(this, [editingFile, cargoManifestPath]).then (cmd) =>
@@ -140,32 +141,43 @@ class LinterRust
           result.push ['--cfg', "feature=\"#{f}\""]
         result
 
+  cachedErrorMode: null
+
   decideErrorMode: (curDir, commandMode) =>
-    # current dir is set to handle overrides
-    sb_exec.exec(@rustcPath, ['--version'], {stream: 'stdout', cwd: curDir, stdio: 'pipe'}).then (stdout) =>
-      try
-        match = XRegExp.exec(stdout, @patternRustcVersion)
-        if match
-          nightlyWithJSON = match.nightly and match.date > '2016-08-08'
-          stableWithJSON = not match.nightly and semver.gte(match.version, '1.12.0')
-          canUseIntermediateJSON = nightlyWithJSON or stableWithJSON
-          switch commandMode
-            when 'cargo'
-              canUseProperCargoJSON = match.nightly and match.date > '2016-10-10'
-              if canUseProperCargoJSON
-                errorModes.JSON_CARGO
-              # this mode is used only through August till October, 2016
-              else if canUseIntermediateJSON
-                errorModes.FLAGS_JSON_CARGO
-              else
-                errorModes.OLD_CARGO
-            when 'rustc'
-              if canUseIntermediateJSON
-                errorModes.JSON_RUSTC
-              else
-                errorModes.OLD_RUSTC
-        else
-          throw 'rustc returned inapplicable result: ' + stdout
+    # error mode is cached to avoid delays
+    if @cachedErrorMode? and do @cachedErrorMode.valid
+      Promise.resolve().then () =>
+        do @cachedErrorMode.getResult
+    else
+      # current dir is set to handle overrides
+      atom_linter.exec(@rustcPath, ['--version'], {cwd: curDir}).then (stdout) =>
+        try
+          match = XRegExp.exec(stdout, @patternRustcVersion)
+          if match
+            nightlyWithJSON = match.nightly and match.date > '2016-08-08'
+            stableWithJSON = not match.nightly and semver.gte(match.version, '1.12.0')
+            canUseIntermediateJSON = nightlyWithJSON or stableWithJSON
+            switch commandMode
+              when 'cargo'
+                canUseProperCargoJSON = match.nightly and match.date > '2016-10-10'
+                if canUseProperCargoJSON
+                  errorModes.JSON_CARGO
+                # this mode is used only through August till October, 2016
+                else if canUseIntermediateJSON
+                  errorModes.FLAGS_JSON_CARGO
+                else
+                  errorModes.OLD_CARGO
+              when 'rustc'
+                if canUseIntermediateJSON
+                  errorModes.JSON_RUSTC
+                else
+                  errorModes.OLD_RUSTC
+          else
+            throw 'rustc returned unexpected result: ' + stdout
+      .then (result) =>
+        @cachedErrorMode = new CachedResult(result)
+        result
+
 
   locateCargo: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
