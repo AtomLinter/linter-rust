@@ -159,7 +159,7 @@ class LinterRust
             canUseIntermediateJSON = nightlyWithJSON or stableWithJSON
             switch commandMode
               when 'cargo'
-                canUseProperCargoJSON = match.nightly and match.date > '2016-10-10'
+                canUseProperCargoJSON = match.nightly and match.date >= '2016-10-10'
                 if canUseProperCargoJSON
                   errorModes.JSON_CARGO
                 # this mode is used only through August till October, 2016

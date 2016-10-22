@@ -207,8 +207,8 @@ errorModes =
 
     parse: (output, options) ->
       options.additionalFilter = (json) ->
-        if input? and input.reason == "compiler-message"
-          input.message
+        if json? and json.reason == "compiler-message"
+          json.message
       parseJsonOutput output, options
 
     buildArguments: (linter, file) ->
