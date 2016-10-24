@@ -1,7 +1,6 @@
 XRegExp = require 'xregexp'
 path = require 'path'
 atom_linter = require 'atom-linter'
-CachedResult = require './cached_result'
 
 pattern = XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
   (?<to_line>\\d+):(?<to_col>\\d+)\\s+\
@@ -145,9 +144,9 @@ cachedUsingMultitoolForClippy = null
 buildCargoArguments = (linter, cargoManifestPath) ->
   buildCargoPath = (cargoPath, cargoCommand) ->
     # the result is cached to avoid delays
-    if cachedUsingMultitoolForClippy? and do cachedUsingMultitoolForClippy.valid
+    if cachedUsingMultitoolForClippy? and linter.allowedToCacheVersions
       Promise.resolve().then () =>
-        do cachedUsingMultitoolForClippy.getResult
+        cachedUsingMultitoolForClippy
     else
       # Decide if should use older multirust or newer rustup
       usingMultitoolForClippy =
@@ -167,7 +166,7 @@ buildCargoArguments = (linter, cargoManifestPath) ->
         else
           [cargoPath]
       .then (cached) =>
-        cachedUsingMultitoolForClippy = new CachedResult(cached, 20)
+        cachedUsingMultitoolForClippy = cached
         cached
 
   cargoArgs = switch linter.cargoCommand

@@ -5,7 +5,6 @@ semver = require 'semver'
 {CompositeDisposable} = require 'atom'
 atom_linter = require 'atom-linter'
 errorModes = require './mode'
-CachedResult = require './cached_result'
 
 class LinterRust
   patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
@@ -51,6 +50,10 @@ class LinterRust
     @subscriptions.add atom.config.observe 'linter-rust.specifiedFeatures',
     (specifiedFeatures) =>
       @specifiedFeatures = specifiedFeatures
+
+    @subscriptions.add atom.config.observe 'linter-rust.allowedToCacheVersions',
+    (allowedToCacheVersions) =>
+      @allowedToCacheVersions = allowedToCacheVersions
 
   destroy: ->
     do @subscriptions.dispose
@@ -141,13 +144,11 @@ class LinterRust
           result.push ['--cfg', "feature=\"#{f}\""]
         result
 
-  cachedErrorMode: null
-
   decideErrorMode: (curDir, commandMode) =>
     # error mode is cached to avoid delays
-    if @cachedErrorMode? and do @cachedErrorMode.valid
+    if @cachedErrorMode? and @allowedToCacheVersions
       Promise.resolve().then () =>
-        do @cachedErrorMode.getResult
+        @cachedErrorMode
     else
       # current dir is set to handle overrides
       atom_linter.exec(@rustcPath, ['--version'], {cwd: curDir}).then (stdout) =>
@@ -175,7 +176,7 @@ class LinterRust
           else
             throw 'rustc returned unexpected result: ' + stdout
       .then (result) =>
-        @cachedErrorMode = new CachedResult(result)
+        @cachedErrorMode = result
         result
 
 
