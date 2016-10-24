@@ -1,9 +1,11 @@
 fs = require 'fs'
 path = require 'path'
-XRegExp = require 'xregexp'
-semver = require 'semver'
+
 {CompositeDisposable} = require 'atom'
 atom_linter = require 'atom-linter'
+semver = require 'semver'
+XRegExp = require 'xregexp'
+
 errorModes = require './mode'
 
 class LinterRust

@@ -1,6 +1,7 @@
-XRegExp = require 'xregexp'
 path = require 'path'
+
 atom_linter = require 'atom-linter'
+XRegExp = require 'xregexp'
 
 pattern = XRegExp('(?<file>[^\n\r]+):(?<from_line>\\d+):(?<from_col>\\d+):\\s*\
   (?<to_line>\\d+):(?<to_col>\\d+)\\s+\

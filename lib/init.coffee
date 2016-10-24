@@ -62,7 +62,7 @@ module.exports =
   provideLinter: ->
     LinterRust = require('./linter-rust')
     @provider = new LinterRust()
-    return {
+    {
       name: 'Rust'
       grammarScopes: ['source.rust']
       scope: 'project'
