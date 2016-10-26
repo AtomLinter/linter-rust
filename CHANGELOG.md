@@ -1,3 +1,7 @@
+# 0.7.0
+* Added a proper support for `cargo --message-format json` (@White-Oak)
+* Fix span for macro invocations (@utkarshkukreti)
+
 # 0.6.0
 *  Use asynchronous execs instead of synchronous (@White-Oak)
 
