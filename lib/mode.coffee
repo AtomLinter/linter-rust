@@ -37,7 +37,7 @@ parseJsonMessages = (messages, {disabledWarnings}) ->
     continue unless input and input.spans
     primary_span = input.spans.find (span) -> span.is_primary
     continue unless primary_span
-    if primary_span.expansion && primary_span.expansion.span
+    while primary_span.expansion and primary_span.expansion.span
       primary_span = primary_span.expansion.span
     range = [
       [primary_span.line_start - 1, primary_span.column_start - 1],
