@@ -1,0 +1,26 @@
+[{
+    "type": "Error",
+    "text": "if may be missing an else clause",
+    "filePath": "main.rs",
+    "range": [
+        [7, 1],
+        [9, 2]
+    ],
+    "trace": [{
+        "type": "Trace",
+        "text": "expected type `()`",
+        "filePath": "main.rs",
+        "range": [
+            [7, 1],
+            [9, 2]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "   found type `std::string::String`",
+        "filePath": "main.rs",
+        "range": [
+            [7, 1],
+            [9, 2]
+        ]
+    }]
+}]

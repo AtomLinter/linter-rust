@@ -1,0 +1,74 @@
+[{
+    "type": "Error",
+    "text": "the trait bound `&str: std::cmp::PartialEq<_>` is not satisfied [E0277]",
+    "filePath": "main.rs",
+    "range": [
+        [1, 4],
+        [1, 25]
+    ],
+    "trace": [{
+        "type": "Trace",
+        "text": "in this expansion of assert_eq! (defined in <std macros>)",
+        "filePath": "main.rs",
+        "range": [
+            [1, 4],
+            [1, 25]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "run `rustc --explain E0277` to see a detailed explanation",
+        "filePath": "<std macros>",
+        "range": [
+            [4, 5],
+            [4, 34]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "the following implementations were found:",
+        "filePath": "<std macros>",
+        "range": [
+            [4, 5],
+            [4, 34]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "<str as std::cmp::PartialEq<std::ffi::OsString>>",
+        "filePath": "<std macros>",
+        "range": [
+            [4, 5],
+            [4, 34]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "<str as std::cmp::PartialEq<std::ffi::OsStr>>",
+        "filePath": "<std macros>",
+        "range": [
+            [4, 5],
+            [4, 34]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "<str as std::cmp::PartialEq<std::string::String>>",
+        "filePath": "<std macros>",
+        "range": [
+            [4, 5],
+            [4, 34]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "<&'a str as std::cmp::PartialEq<std::string::String>>",
+        "filePath": "<std macros>",
+        "range": [
+            [4, 5],
+            [4, 34]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "and 3 others\nerror: aborting due to previous error\nerror: Could not compile `fails`.",
+        "filePath": "<std macros>",
+        "range": [
+            [4, 5],
+            [4, 34]
+        ]
+    }]
+}]

@@ -1,0 +1,10 @@
+[{
+    "type": "Warning",
+    "text": "unused variable: `b`, #[warn(unused_variables)] on by default",
+    "filePath": "main.rs",
+    "range": [
+        [3, 5],
+        [3, 6]
+    ],
+    "trace": []
+}]

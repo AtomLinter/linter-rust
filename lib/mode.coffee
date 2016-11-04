@@ -81,6 +81,11 @@ buildMessages = (elements, disabledWarnings) ->
       when 'info', 'trace', 'note'
         # Add only if there is a last message
         if lastMessage
+          # The info message "in this expansion of ..." exists if an error was met in some macro expansion
+          # So instead of saying "error was in some file named <macros>" we use this expansion info
+          if element.type == 'info' and element.message.indexOf('in this expansion of') != -1
+            lastMessage.range = element.range
+            lastMessage.filePath = element.file
           lastMessage.trace or= []
           lastMessage.trace.push
             type: "Trace"
