@@ -9,7 +9,7 @@ XRegExp = require 'xregexp'
 errorModes = require './mode'
 
 class LinterRust
-  patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?<nightly>nightly)|(?:[^\\s]+))? \
+  patternRustcVersion: XRegExp('rustc (?<version>1.\\d+.\\d+)(?:(?:-(?:(?<nightly>nightly)|(?<beta>beta.*?))|(?:[^\s]+))? \
                                 \\((?:[^\\s]+) (?<date>\\d{4}-\\d{2}-\\d{2})\\))?')
   cargoDependencyDir: "target/debug/deps"
 
@@ -162,7 +162,8 @@ class LinterRust
             canUseIntermediateJSON = nightlyWithJSON or stableWithJSON
             switch commandMode
               when 'cargo'
-                canUseProperCargoJSON = match.nightly and match.date >= '2016-10-10'
+                canUseProperCargoJSON = (match.nightly and match.date >= '2016-10-10') or
+                  (match.beta or not match.nightly and semver.gte(match.version, '1.13.0'))
                 if canUseProperCargoJSON
                   errorModes.JSON_CARGO
                 # this mode is used only through August till October, 2016
