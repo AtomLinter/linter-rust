@@ -124,11 +124,15 @@ constructMessage = (type, element) ->
   if element.children
     message.trace = []
     for children in element.children
+      range = [
+        [children.line_start - 1, children.column_start - 1],
+        [children.line_end - 1, children.column_end - 1]
+      ]
       message.trace.push
         type: "Trace"
         text: children.message
         filePath: element.file
-        range: children.range or element.range
+        range: range
   message
 
 buildRustcArguments = (linter, paths) ->

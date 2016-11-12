@@ -13,8 +13,10 @@ loadExpectedObject = (dir, name) ->
 
 checkCommonExpectations = (dir, mode, name) ->
   message = loadMessage dir, name
+  parsed = mode.parse message, {}
   expected = loadExpectedObject dir, name
-  expect mode.parse message, {}
+  console.log JSON.stringify parsed
+  expect parsed
     .toEqual expected
 
 describe "Parsing methods for old rustc versions", ->
@@ -126,3 +128,6 @@ describe "Parsing methods for new cargo versions supporting json", ->
 
   it 'should cope with an extra output produced by cargo', ->
     checkExpectations 'extra_output'
+
+  it 'should cope with what', ->
+    checkExpectations 'unknown_yet'
