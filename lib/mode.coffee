@@ -130,8 +130,9 @@ buildRustcArguments = (linter, paths) ->
   [editingFile, cargoManifestPath] = paths
   Promise.resolve().then () =>
     rustcArgs = switch linter.rustcBuildTest
-      when true then ['--cfg', 'test', '-Z', 'no-trans', '--color', 'never']
-      else ['-Z', 'no-trans', '--color', 'never']
+      when true then ['--cfg', 'test']
+      else []
+    rustcArgs = rustcArgs.concat ['--color', 'never']
     cmd = [linter.rustcPath]
       .concat rustcArgs
     if cargoManifestPath
@@ -175,7 +176,7 @@ buildCargoArguments = (linter, cargoManifestPath) ->
   cargoArgs = switch linter.cargoCommand
     when 'check' then ['check']
     when 'test' then ['test', '--no-run']
-    when 'rustc' then ['rustc', '-Zno-trans', '--color', 'never']
+    when 'rustc' then ['rustc', '--color', 'never']
     when 'clippy' then ['clippy']
     else ['build']
 
