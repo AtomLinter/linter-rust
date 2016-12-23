@@ -1,3 +1,6 @@
+# 0.7.2
+* Removed `-Zno-trans` option for forward compatibility (@White-Oak)
+
 # 0.7.1
 * Added beta and stable versions to proper JSON support mode (@White-Oak)
 
