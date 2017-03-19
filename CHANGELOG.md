@@ -1,3 +1,6 @@
+# 0.7.3
+* Update `atom-linter` to v9.0.0 (@Arcanemagus)
+
 # 0.7.2
 * Removed `-Zno-trans` option for forward compatibility (@White-Oak)
 
