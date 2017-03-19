@@ -12,7 +12,7 @@ parseOldMessages = (output, {disabledWarnings, textEditor}) ->
   elements = []
   XRegExp.forEach output, pattern, (match) ->
     range = if match.from_col == match.to_col and match.from_line == match.to_line
-      atom_linter.rangeFromLineNumber(textEditor, Number.parseInt(match.from_line, 10) - 1, Number.parseInt(match.from_col, 10) - 1)
+      atom_linter.generateRange(textEditor, Number.parseInt(match.from_line, 10) - 1, Number.parseInt(match.from_col, 10) - 1)
     else
       [
         [match.from_line - 1, match.from_col - 1],
