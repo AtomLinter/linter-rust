@@ -53,7 +53,11 @@ module.exports =
       type: 'boolean'
       default: true
       description: "Uncheck this if you need to change toolchains during one Atom session. Otherwise toolchains' versions are saved for an entire Atom session to increase performance."
-
+    disableExecTimeout:
+      title: "Disable Execution Timeout"
+      type: 'boolean'
+      default: false
+      description: "By default processes running longer than 10 seconds will be automatically terminated. Enable this option if you are getting messages about process execution timing out."
 
   activate: ->
     require('atom-package-deps').install 'linter-rust'
