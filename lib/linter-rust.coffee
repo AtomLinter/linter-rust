@@ -57,6 +57,10 @@ class LinterRust
     (allowedToCacheVersions) =>
       @allowedToCacheVersions = allowedToCacheVersions
 
+    @subscriptions.add atom.config.observe 'linter-rust.disableExecTimeout',
+    (value) =>
+      @disableExecTimeout = value
+
   destroy: ->
     do @subscriptions.dispose
 
@@ -77,7 +81,13 @@ class LinterRust
           additional = if env.RUSTFLAGS? then ' ' + env.RUSTFLAGS else ''
           env.RUSTFLAGS = '--error-format=json' + additional
 
-      atom_linter.exec(command, args, {env: env, cwd: cwd, stream: 'both'})
+      execOpts =
+        env: env
+        cwd: cwd
+        stream: 'both'
+      execOpts.timeout = Infinity if @disableExecTimeout
+
+      atom_linter.exec(command, args, execOpts)
         .then (result) =>
           {stdout, stderr, exitCode} = result
           # first, check if an output says specified features are invalid
@@ -129,11 +139,11 @@ class LinterRust
     cargoManifestPath = @locateCargo curDir
     if not @useCargo or not cargoManifestPath
       @decideErrorMode(curDir, 'rustc').then (mode) =>
-        mode.buildArguments(this, [editingFile, cargoManifestPath]).then (cmd) =>
+        mode.buildArguments(this, [editingFile, cargoManifestPath]).then (cmd) ->
           [cmd, mode]
     else
       @decideErrorMode(curDir, 'cargo').then (mode) =>
-        mode.buildArguments(this, cargoManifestPath).then (cmd) =>
+        mode.buildArguments(this, cargoManifestPath).then (cmd) ->
           [cmd, mode]
 
   compilationFeatures: (cargo) =>
@@ -153,7 +163,10 @@ class LinterRust
         @cachedErrorMode
     else
       # current dir is set to handle overrides
-      atom_linter.exec(@rustcPath, ['--version'], {cwd: curDir}).then (stdout) =>
+      execOpts =
+        cwd: curDir
+      execOpts.timeout = Infinity if @disableExecTimeout
+      atom_linter.exec(@rustcPath, ['--version'], execOpts).then (stdout) =>
         try
           match = XRegExp.exec(stdout, @patternRustcVersion)
           if match
@@ -177,7 +190,7 @@ class LinterRust
                 else
                   errorModes.OLD_RUSTC
           else
-            throw 'rustc returned unexpected result: ' + stdout
+            throw Error('rustc returned unexpected result: ' + stdout)
       .then (result) =>
         @cachedErrorMode = result
         result
