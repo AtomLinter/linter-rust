@@ -69,11 +69,12 @@ class LinterRust
       [cmd_res, errorMode] = result
       [file, cmd] = cmd_res
       env = JSON.parse JSON.stringify process.env
-      curDir = path.dirname file
+      curDir = if file? then path.dirname file else __dirname
       cwd = curDir
       command = cmd[0]
+      cmdPath = if cmd[0]? then path.dirname cmd[0] else __dirname
       args = cmd.slice 1
-      env.PATH = path.dirname(cmd[0]) + path.delimiter + env.PATH
+      env.PATH = cmdPath + path.delimiter + env.PATH
 
       # we set flags only for intermediate json support
       if errorMode == errorModes.FLAGS_JSON_CARGO
@@ -135,7 +136,7 @@ class LinterRust
           []
 
   initCmd: (editingFile) =>
-    curDir = path.dirname editingFile
+    curDir = if editingFile? then path.dirname editingFile else __dirname
     cargoManifestPath = @locateCargo curDir
     if not @useCargo or not cargoManifestPath
       @decideErrorMode(curDir, 'rustc').then (mode) =>
