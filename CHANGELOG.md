@@ -1,3 +1,7 @@
+# 0.8.0
+* Add option to disable execution timeout (@Arcanemagus)
+* Don't pass null to dirname (@Arcanemagus)
+
 # 0.7.3
 * Update `atom-linter` to v9.0.0 (@Arcanemagus)
 
