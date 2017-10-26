@@ -186,7 +186,7 @@ buildCargoArguments = (linter, cargoManifestPath) ->
       .concat cargoArgs
       .concat ['-j', linter.jobsNumber]
     cmd = cmd.concat compilationFeatures if compilationFeatures
-    cmd = cmd.concat ['--manifest-path', cargoManifestPath]
+    cmd.push "--manifest-path=#{cargoManifestPath}"
     [cargoManifestPath, cmd]
 
 # These define the behabiour of each error mode linter-rust has
