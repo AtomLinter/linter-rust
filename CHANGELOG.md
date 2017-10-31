@@ -1,3 +1,6 @@
+# 0.8.1
+Fix clippy `--manifest-path` usage (@alexheretic)
+
 # 0.8.0
 * Add option to disable execution timeout (@Arcanemagus)
 * Don't pass null to dirname (@Arcanemagus)
