@@ -17,9 +17,10 @@ module.exports =
     cargoCommand:
       type: 'string'
       default: 'build'
-      enum: ['build', 'check', 'test', 'rustc', 'clippy']
-      description: "Use 'check' for fast linting (you need to install
-        `cargo-check`). Use 'clippy' to increase amount of available lints
+      enum: ['build', 'check', 'check all', 'test', 'rustc', 'clippy']
+      description: "Use 'check' for fast linting.
+        Use 'check all' for fast linting of all packages and tests.
+        Use 'clippy' to increase amount of available lints
         (you need to install `clippy`).
         Use 'test' to lint test code, too.
         Use 'rustc' for fast linting (note: does not build
