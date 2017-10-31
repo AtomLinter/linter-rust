@@ -16,7 +16,7 @@ module.exports =
       description: "Path to Rust's package manager `cargo`"
     cargoCommand:
       type: 'string'
-      default: 'build'
+      default: 'check all'
       enum: ['build', 'check', 'check all', 'test', 'rustc', 'clippy']
       description: "Use 'check' for fast linting.
         Use 'check all' for fast linting of all packages and tests.
