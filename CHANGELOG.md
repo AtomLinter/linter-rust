@@ -1,3 +1,6 @@
+# 0.8.2
+* Add support for "cargo check --all" (@arthurprs)
+
 # 0.8.1
 Fix clippy `--manifest-path` usage (@alexheretic)
 
