@@ -1,3 +1,6 @@
+# 0.8.3
+* Add --tests flag to `check all` mode (@HyeonuPark)
+
 # 0.8.2
 * Add support for "cargo check --all" (@arthurprs)
 
