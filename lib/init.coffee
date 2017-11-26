@@ -17,7 +17,7 @@ module.exports =
     cargoCommand:
       type: 'string'
       default: 'check all'
-      enum: ['build', 'check', 'check all', 'test', 'rustc', 'clippy']
+      enum: ['build', 'check', 'check all', 'test', 'test all', 'rustc', 'clippy']
       description: "Use 'check' for fast linting.
         Use 'check all' for fast linting of all packages and tests.
         Use 'clippy' to increase amount of available lints
