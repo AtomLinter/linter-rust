@@ -19,10 +19,11 @@ module.exports =
       default: 'test all'
       enum: ['build', 'check', 'check all', 'test', 'test all', 'rustc', 'clippy']
       description: "Use 'check' for fast linting.
-        Use 'check all' for fast linting of all packages and tests.
+        Use 'check all' for fast linting of all packages.
         Use 'clippy' to increase amount of available lints
         (you need to install `clippy`).
         Use 'test' to lint test code, too.
+        Use 'test all' to lint test code in all packages, too.
         Use 'rustc' for fast linting (note: does not build
         the project)."
     cargoManifestFilename:
