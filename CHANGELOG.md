@@ -1,3 +1,7 @@
+# 0.8.4
+* Fix 'check all' and Add 'test all' (@alkorang)
+* Description for 'check all' and 'test all' (@alkorang)
+
 # 0.8.3
 * Add --tests flag to `check all` mode (@HyeonuPark)
 
