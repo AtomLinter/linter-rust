@@ -3,10 +3,13 @@
   "main": "./lib/init",
   "version": "0.8.4",
   "description": "Lint Rust-files, using rustc and/or cargo",
-  "repository": "https://github.com/AtomLinter/linter-rust",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AtomLinter/linter-rust.git"
+  },
   "license": "MIT",
   "engines": {
-    "atom": ">0.50.0"
+    "atom": ">=1.0.0 <2.0.0"
   },
   "providedServices": {
     "linter": {

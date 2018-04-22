@@ -1,21 +1,44 @@
 ### Project specific config ###
-language: rust
+os: linux
 
-matrix:
+jobs:
   include:
-    - os: linux
-      env: ATOM_CHANNEL=stable
+    - stage: test
+      language: rust
       rust: stable
-
-    - os: linux
-      env: ATOM_CHANNEL=beta
+      env: ATOM_CHANNEL=stable
+      script: skip
+    - stage: test
+      language: rust
       rust: beta
+      env: ATOM_CHANNEL=beta
+      script: skip
+    - stage: test
+      language: node_js
+      node_js: lts/*
+      install:
+        - npm install
+      script:
+        - commitlint-travis
+    - stage: release
+      # Since the deploy needs APM, currently the simplest method is to run
+      # build-package.sh, which requires the specs to pass, so this must run on Rust
+      language: rust
+      rust: stable
+      script:
+        - export PATH=${PATH}:${HOME}/atom/usr/bin/
+      deploy:
+        provider: script
+        skip_cleanup: true
+        script:
+          - nvm install lts/*
+          - npx semantic-release
 
 ### Generic setup follows ###
-script:
+install:
   - curl -s -O https://raw.githubusercontent.com/atom/ci/master/build-package.sh
   - chmod u+x build-package.sh
-  - ./build-package.sh
+  - "./build-package.sh"
 
 notifications:
   email:
@@ -25,11 +48,12 @@ notifications:
 branches:
   only:
     - master
-    - /^greenkeeper/.*$/
+    - "/^greenkeeper/.*$/"
 
 git:
   depth: 10
 
+dist: trusty
 sudo: false
 
 addons:
@@ -40,14 +64,7 @@ addons:
     - libgnome-keyring-dev
     - fakeroot
 
-node_js: lts/*
-
-after_success:
-  # Add apm to the PATH
-  - export PATH=${PATH}:${HOME}/atom/usr/bin/
-
-deploy:
-  provider: script
-  skip_cleanup: true
-  script:
-    - npx semantic-release
+stages:
+  - test
+  - name: release
+    if: (NOT type = pull_request) AND branch = master
