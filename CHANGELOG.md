@@ -1,3 +1,11 @@
+<a name="0.8.5"></a>
+## [0.8.5](https://github.com/AtomLinter/linter-rust/compare/v0.8.4...v0.8.5) (2018-04-22)
+
+
+### Bug Fixes
+
+* **package:** update xregexp to version 4.1.1 ([8d401d6](https://github.com/AtomLinter/linter-rust/commit/8d401d6)), closes [#124](https://github.com/AtomLinter/linter-rust/issues/124)
+
 # 0.8.4
 * Fix 'check all' and Add 'test all' (@alkorang)
 * Description for 'check all' and 'test all' (@alkorang)
