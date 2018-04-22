@@ -1,21 +1,33 @@
 ### Project specific config ###
 language: rust
+rust: stable
+os: linux
 
-matrix:
+env:
+  matrix:
+    - ATOM_CHANNEL=stable
+    - ATOM_CHANNEL=beta
+
+script:
+  - commitlint-travis
+
+jobs:
   include:
-    - os: linux
-      env: ATOM_CHANNEL=stable
-      rust: stable
-
-    - os: linux
-      env: ATOM_CHANNEL=beta
-      rust: beta
+    - stage: release
+      script:
+        - export PATH=${PATH}:${HOME}/atom/usr/bin/
+      deploy:
+        provider: script
+        skip_cleanup: true
+        script:
+          - nvm install lts/*
+          - npx semantic-release
 
 ### Generic setup follows ###
-script:
+install:
   - curl -s -O https://raw.githubusercontent.com/atom/ci/master/build-package.sh
   - chmod u+x build-package.sh
-  - ./build-package.sh
+  - "./build-package.sh"
 
 notifications:
   email:
@@ -25,11 +37,12 @@ notifications:
 branches:
   only:
     - master
-    - /^greenkeeper/.*$/
+    - "/^greenkeeper/.*$/"
 
 git:
   depth: 10
 
+dist: trusty
 sudo: false
 
 addons:
@@ -40,14 +53,7 @@ addons:
     - libgnome-keyring-dev
     - fakeroot
 
-node_js: lts/*
-
-after_success:
-  # Add apm to the PATH
-  - export PATH=${PATH}:${HOME}/atom/usr/bin/
-
-deploy:
-  provider: script
-  skip_cleanup: true
-  script:
-    - npx semantic-release
+stages:
+  - test
+  - name: release
+    if: (NOT type = pull_request) AND branch = master
