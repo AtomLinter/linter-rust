@@ -1,9 +1,28 @@
+fs = require 'fs'
+
 errorModes = require '../lib/mode'
 LinterRust = require '../lib/linter-rust'
 
 linter = new LinterRust()
 
-describe "errorModes::OLD_RUSTC::parse", ->
+loadMessage = (dir, name) ->
+  fs.readFileSync "./spec/fixtures/#{dir}/#{name}.json",'utf-8'
+
+loadExpectedObject = (dir, name) ->
+  JSON.parse(fs.readFileSync "./spec/fixtures/#{dir}/answers/#{name}.json",'utf-8')
+
+checkCommonExpectations = (dir, mode, name) ->
+  message = loadMessage dir, name
+  parsed = mode.parse message, {}
+  expected = loadExpectedObject dir, name
+  console.log JSON.stringify parsed
+  expect parsed
+    .toEqual expected
+
+describe "Parsing methods for old rustc versions", ->
+  checkExpectations = (name) ->
+    checkCommonExpectations 'old_rustc', errorModes.OLD_RUSTC, name
+
   it "should return 0 messages for an empty string", ->
     expect(errorModes.OLD_RUSTC.parse('', {})).toEqual([])
 
@@ -85,3 +104,30 @@ describe "errorModes::OLD_RUSTC::parse", ->
 
     expect(buildLinterWithWhitespacePath).not.toThrow()
     resetPath()
+
+  it 'should cope with nested macro expansions', ->
+    checkExpectations 'macro_error'
+
+describe "Parsing methods for new cargo versions supporting json", ->
+  checkExpectations = (name) ->
+    checkCommonExpectations 'json', errorModes.JSON_CARGO, name
+
+  it "should return 0 messages for an empty string", ->
+    message = ""
+    expect errorModes.JSON_CARGO.parse '', {}
+      .toEqual []
+
+  it "should properly parse a simple error message", ->
+    checkExpectations 'simple'
+
+  it "should properly parse a simple warning message", ->
+    checkExpectations 'simple_warning'
+
+  it 'should cope with nested macro expansions', ->
+    checkExpectations 'macro_error'
+
+  it 'should cope with an extra output produced by cargo', ->
+    checkExpectations 'extra_output'
+
+  it 'should cope with what', ->
+    checkExpectations 'unknown_yet'

@@ -1,0 +1,58 @@
+[{
+    "type": "Error",
+    "text": "the trait bound `&str: std::cmp::PartialEq<{integer}>` is not satisfied",
+    "filePath": "main.rs",
+    "range": [
+        [1, 4],
+        [1, 25]
+    ],
+    "trace": [{
+        "type": "Trace",
+        "text": "the following implementations were found:",
+        "filePath": "main.rs",
+        "range": [
+            [1, 4],
+            [1, 25]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "  <str as std::cmp::PartialEq<std::ffi::OsString>>",
+        "filePath": "main.rs",
+        "range": [
+            [1, 4],
+            [1, 25]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "  <str as std::cmp::PartialEq<std::ffi::OsStr>>",
+        "filePath": "main.rs",
+        "range": [
+            [1, 4],
+            [1, 25]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "  <str as std::cmp::PartialEq<std::string::String>>",
+        "filePath": "main.rs",
+        "range": [
+            [1, 4],
+            [1, 25]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "  <&'a str as std::cmp::PartialEq<std::string::String>>",
+        "filePath": "main.rs",
+        "range": [
+            [1, 4],
+            [1, 25]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "and 3 others",
+        "filePath": "main.rs",
+        "range": [
+            [1, 4],
+            [1, 25]
+        ]
+    }]
+}]

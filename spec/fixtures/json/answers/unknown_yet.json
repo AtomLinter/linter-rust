@@ -1,0 +1,26 @@
+[{
+    "type": "Error",
+    "text": "borrowed value does not live long enough",
+    "filePath": "main.rs",
+    "range": [
+        [7, 5],
+        [7, 18]
+    ],
+    "trace": [{
+        "type": "Trace",
+        "text": "borrowed value must be valid for the anonymous lifetime #1 defined on the block at 7:34...",
+        "filePath": "main.rs",
+        "range": [
+            [7, 5],
+            [7, 18]
+        ]
+    }, {
+        "type": "Trace",
+        "text": "temporary value only lives until here",
+        "filePath": "main.rs",
+        "range": [
+            [8, 0],
+            [8, 1]
+        ]
+    }]
+}]
