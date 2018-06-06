@@ -33,7 +33,7 @@ module.exports =
       <li>Use **check all** for fast linting of all packages in the project.</li>
       <li>Use **check tests** to also include \`#[cfg(test)]\` code in linting.</li>
       <li>Use **clippy** to increase amount of available lints (you need to install \`clippy\`).</li>
-      <li>Use **test** to run tests (successful tests may lints from showing).</li>
+      <li>Use **test** to run tests (note that once the tests are built, lints stop showing).</li>
       <li>Use **test all** run tests for all packages in the project.</li>
       <li>Use **rustc** for linting with Rust pre-1.23.</li>
       </ul>"""#.replace('\n', '<br>')
