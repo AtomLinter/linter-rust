@@ -36,7 +36,7 @@ module.exports =
       <li>Use **test** to run tests (note that once the tests are built, lints stop showing).</li>
       <li>Use **test all** run tests for all packages in the project.</li>
       <li>Use **rustc** for linting with Rust pre-1.23.</li>
-      </ul>"""#.replace('\n', '<br>')
+      </ul>"""
     cargoManifestFilename:
       type: 'string'
       default: 'Cargo.toml'
