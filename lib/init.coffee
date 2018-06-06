@@ -34,7 +34,7 @@ module.exports =
       - Use `check all` for fast linting of all packages in the project.
       - Use `check tests` to also include `#[cfg(test)]` code in linting.
       - Use 'clippy' to increase amount of available lints (you need to install `clippy`).
-      - Use 'test' to run tests.
+      - Use 'test' to run tests (successful tests may lints from showing).
       - Use 'test all' run tests for all packages in the project.
       - Use 'rustc' for linting in Rust pre-1.23.
       """
