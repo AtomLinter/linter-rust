@@ -17,15 +17,27 @@ module.exports =
     cargoCommand:
       type: 'string'
       default: 'test all'
-      enum: ['build', 'check', 'check all', 'test', 'test all', 'rustc', 'clippy']
-      description: "Use 'check' for fast linting.
-        Use 'check all' for fast linting of all packages.
-        Use 'clippy' to increase amount of available lints
-        (you need to install `clippy`).
-        Use 'test' to lint test code, too.
-        Use 'test all' to lint test code in all packages, too.
-        Use 'rustc' for fast linting (note: does not build
-        the project)."
+      enum: [
+          'build'
+          'check'
+          'check all'
+          'check tests'
+          'test'
+          'test all'
+          'rustc'
+          'clippy'
+      ]
+      description:
+      """
+      - Use `build` to simply compile the code.
+      - Use `check` for fast linting.
+      - Use `check all` for fast linting of all packages in the project.
+      - Use `check tests` to also include `#[cfg(test)]` code in linting.
+      - Use 'clippy' to increase amount of available lints (you need to install `clippy`).
+      - Use 'test' to run tests.
+      - Use 'test all' run tests for all packages in the project.
+      - Use 'rustc' for linting in Rust pre-1.23.
+      """
     cargoManifestFilename:
       type: 'string'
       default: 'Cargo.toml'
