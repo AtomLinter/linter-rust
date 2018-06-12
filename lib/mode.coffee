@@ -176,6 +176,7 @@ buildCargoArguments = (linter, cargoManifestPath) ->
   cargoArgs = switch linter.cargoCommand
     when 'check' then ['check']
     when 'check all' then ['check', '--all']
+    when 'check tests' then ['check', '--tests']
     when 'test' then ['test', '--no-run']
     when 'test all' then ['test', '--no-run', '--all']
     when 'rustc' then ['rustc', '--color', 'never']
