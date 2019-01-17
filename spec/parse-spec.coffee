@@ -10,19 +10,21 @@ describe "errorModes::OLD_RUSTC::parse", ->
   it "should properly parse one line error message", ->
     expect(errorModes.OLD_RUSTC.parse('my/awesome file.rs:1:2: 3:4 error: my awesome text\n', {}))
       .toEqual([{
-        type: 'Error'
-        text: 'my awesome text'
-        filePath: 'my/awesome file.rs'
-        range: [[0, 1], [2, 3]]
+        severity: 'error'
+        excerpt: 'my awesome text'
+        location:
+          file: 'my/awesome file.rs'
+          position: [[0, 1], [2, 3]]
       }])
 
   it "should properly parse one line warning message", ->
     expect(errorModes.OLD_RUSTC.parse('foo:33:44: 22:33 warning: äüö<>\n', {}))
       .toEqual([{
-        type: 'Warning',
-        text: 'äüö<>'
-        filePath: 'foo'
-        range: [[32, 43], [21, 32]]
+        severity: 'warning',
+        excerpt: 'äüö<>'
+        location:
+          file: 'foo'
+          position: [[32, 43], [21, 32]]
       }])
 
   it "should return messages with a range of at least one character", ->
@@ -31,47 +33,77 @@ describe "errorModes::OLD_RUSTC::parse", ->
         # expect(editor.getPath()).toContain 'c.coffee'
     expect(errorModes.OLD_RUSTC.parse('foo:1:1: 1:1 error: text\n', {textEditor: editor}))
       .toEqual([{
-        type: 'Error'
-        text: 'text'
-        filePath: 'foo'
-        range: [[0, 0], [0, 2]]
+        severity: 'error'
+        excerpt: 'text'
+        location:
+          file: 'foo'
+          position: [[0, 0], [0, 2]]
       }])
     expect(errorModes.OLD_RUSTC.parse('foo:2:1: 2:1 error: text\n', {textEditor: editor}))
       .toEqual([{
-        type: 'Error'
-        text: 'text'
-        filePath: 'foo'
-        range: [[1, 0], [1, 7]]
+        severity: 'error'
+        excerpt: 'text'
+        location:
+          file: 'foo'
+          position: [[1, 0], [1, 7]]
       }])
 
   it "should properly parse multiline messages", ->
     expect(errorModes.OLD_RUSTC.parse('bar:1:2: 3:4 error: line one\n\
                          two\n', {}))
       .toEqual([
-        { type: 'Error', text: 'line one\ntwo', filePath: 'bar', range: [[0, 1], [2, 3]] }
+        {
+          severity: 'error',
+          excerpt: 'line one\ntwo',
+          location: {
+            file: 'bar',
+            position: [[0, 1], [2, 3]]
+          }
+        }
       ])
     expect(errorModes.OLD_RUSTC.parse('bar:1:2: 3:4 error: line one\n\
                          two\n\
                          foo:1:1: 1:2 warning: simple line\n', {}))
       .toEqual([
-        { type: 'Error', text: 'line one\ntwo', filePath: 'bar', range: [[0, 1], [2, 3]] },
-        { type: 'Warning', text: 'simple line', filePath: 'foo', range: [[0, 0], [0, 1]] }
+        {
+          severity: 'error',
+          excerpt: 'line one\ntwo',
+          location: {
+            file: 'bar',
+            position: [[0, 1], [2, 3]]
+          }
+        },
+        {
+          severity: 'warning',
+          excerpt: 'simple line',
+          location: {
+            file: 'foo',
+            position: [[0, 0], [0, 1]]
+          }
+        }
       ])
     expect(errorModes.OLD_RUSTC.parse('bar:1:2: 3:4 error: line one\n\
                          two\n\
                          three\n\
                          foo:1   shouldnt match', {}))
       .toEqual([
-        { type: 'Error', text: 'line one\ntwo\nthree', filePath: 'bar', range: [[0, 1], [2, 3]] }
+        {
+          severity: 'error',
+          excerpt: 'line one\ntwo\nthree',
+          location: {
+            file: 'bar',
+            position: [[0, 1], [2, 3]]
+          }
+        }
       ])
 
   it "should also cope with windows line breaks", ->
-    expect(errorModes.OLD_RUSTC.parse('a:1:2: 3:4 error: a\r\nb\n', {})[0].text)
+    expect(errorModes.OLD_RUSTC.parse('a:1:2: 3:4 error: a\r\nb\n', {})[0].excerpt)
       .toEqual('a\r\nb')
 
     multi = errorModes.OLD_RUSTC.parse('a:1:2: 3:4 error: a\n\rb\n\rx:1:2: 3:4 error: asd\r\n', {})
-    expect(multi[0].text).toEqual('a\n\rb')
-    expect(multi[1].text).toEqual('asd')
+    expect(multi[0].excerpt).toEqual('a\n\rb')
+    expect(multi[1].excerpt).toEqual('asd')
 
   it "should not throw an error with extra whitespace in paths", ->
     buildLinterWithWhitespacePath = () ->

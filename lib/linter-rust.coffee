@@ -115,8 +115,8 @@ class LinterRust
 
             # correct file paths
             messages.forEach (message) ->
-              if !(path.isAbsolute message.filePath)
-                message.filePath = path.join curDir, message.filePath
+              if !(path.isAbsolute message.location.file)
+                message.file = path.join curDir, message.file
             messages
           else
             # whoops, we're in trouble -- let's output as much as we can
@@ -195,7 +195,6 @@ class LinterRust
       .then (result) =>
         @cachedErrorMode = result
         result
-
 
   locateCargo: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/

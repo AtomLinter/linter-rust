@@ -53,7 +53,6 @@ parseJsonMessages = (messages, {disabledWarnings}) ->
     for span in input.spans
       unless span.is_primary
         element.children.push
-          message: span.label
           range: [
             [span.line_start - 1, span.column_start - 1],
             [span.line_end - 1, span.column_end - 1]
@@ -81,12 +80,10 @@ buildMessages = (elements, disabledWarnings) ->
       when 'info', 'trace', 'note'
         # Add only if there is a last message
         if lastMessage
-          lastMessage.trace or= []
-          lastMessage.trace.push
-            type: "Trace"
-            text: element.message
-            filePath: element.file
-            range: element.range
+          lastMessage.reference = {
+            file: element.file
+            position: element.range
+          }
       when 'warning'
         # If the message is warning and user enabled disabling warnings
         # Check if this warning is disabled
@@ -111,19 +108,22 @@ buildMessages = (elements, disabledWarnings) ->
 
 constructMessage = (type, element) ->
   message =
-    type: type
-    text: element.message
-    filePath: element.file
-    range: element.range
+    severity: type.toLowerCase()
+    excerpt: element.message
+    location: {
+      file: element.file
+      position: element.range
+    }
   # children exists only in JSON messages
   if element.children
-    message.trace = []
     for children in element.children
-      message.trace.push
-        type: "Trace"
-        text: children.message
-        filePath: element.file
-        range: children.range or element.range
+      if children.range
+        # NOTE: Will only save the first valid reference
+        message.reference = {
+          file: element.file
+          position: children.range
+        }
+        break
   message
 
 buildRustcArguments = (linter, paths) ->
