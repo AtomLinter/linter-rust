@@ -9,7 +9,7 @@
   },
   "license": "MIT",
   "engines": {
-    "atom": ">=1.0.0 <2.0.0"
+    "atom": ">=1.33.0 <2.0.0"
   },
   "providedServices": {
     "linter": {
@@ -25,7 +25,6 @@
     "xregexp": "^4.1.1"
   },
   "package-deps": [
-    "linter:2.0.0",
-    "language-rust"
+    "linter:2.0.0"
   ]
 }
