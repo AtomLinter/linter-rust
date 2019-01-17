@@ -1,10 +1,12 @@
+# 1.0.0
+
+* Update to Linter v2 API (#143)
+* Remove requirement on `language-rust` (#144)
+
 # 0.9.0
 * Add option for `cargo check --tests` (@SnirkImmington)
 
-
-<a name="0.8.5"></a>
 ## [0.8.5](https://github.com/AtomLinter/linter-rust/compare/v0.8.4...v0.8.5) (2018-04-22)
-
 
 ### Bug Fixes
 
