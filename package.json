@@ -14,18 +14,18 @@
   "providedServices": {
     "linter": {
       "versions": {
-        "1.0.0": "provideLinter"
+        "2.0.0": "provideLinter"
       }
     }
   },
   "dependencies": {
     "atom-linter": "^10.0.0",
-    "atom-package-deps": "^4.3.1",
+    "atom-package-deps": "^5.0.0",
     "semver": "^5.3.0",
     "xregexp": "^4.1.1"
   },
   "package-deps": [
-    "linter",
+    "linter:2.0.0",
     "language-rust"
   ]
 }

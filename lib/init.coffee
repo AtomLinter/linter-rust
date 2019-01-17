@@ -75,7 +75,6 @@ module.exports =
   activate: ->
     require('atom-package-deps').install 'linter-rust'
 
-
   provideLinter: ->
     LinterRust = require('./linter-rust')
     @provider = new LinterRust()
@@ -84,5 +83,5 @@ module.exports =
       grammarScopes: ['source.rust']
       scope: 'project'
       lint: @provider.lint
-      lintOnFly: false
+      lintsOnChange: false
     }
