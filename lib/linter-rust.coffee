@@ -116,7 +116,7 @@ class LinterRust
             # correct file paths
             messages.forEach (message) ->
               if !(path.isAbsolute message.location.file)
-                message.file = path.join curDir, message.file
+                message.location.file = path.join curDir, message.location.file
             messages
           else
             # whoops, we're in trouble -- let's output as much as we can
