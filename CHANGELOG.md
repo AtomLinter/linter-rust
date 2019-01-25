@@ -1,3 +1,7 @@
+# 1.0.1
+
+* Reference correct message property for file path (#146)
+
 # 1.0.0
 
 * Update to Linter v2 API (#143)
