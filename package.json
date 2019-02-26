@@ -2,6 +2,7 @@
   "name": "linter-rust",
   "main": "./lib/init",
   "version": "1.0.1",
+  "private": true,
   "description": "Lint Rust-files, using rustc and/or cargo",
   "repository": {
     "type": "git",
@@ -23,6 +24,21 @@
     "atom-package-deps": "^5.0.0",
     "semver": "^5.3.0",
     "xregexp": "^4.1.1"
+  },
+  "renovate": {
+    "extends": [
+      "config:base"
+    ],
+    "semanticCommits": true,
+    "rangeStrategy": "pin",
+    "packageRules": [
+      {
+        "packagePatterns": [
+          "^eslint"
+        ],
+        "groupName": "ESLint packages"
+      }
+    ]
   },
   "package-deps": [
     "linter:2.0.0"
