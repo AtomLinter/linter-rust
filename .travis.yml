@@ -30,7 +30,7 @@ branches:
 git:
   depth: 10
 
-dist: trusty
+dist: xenial
 sudo: false
 
 addons:
@@ -40,3 +40,4 @@ addons:
     - git
     - libgnome-keyring-dev
     - fakeroot
+    - libgconf-2-4
