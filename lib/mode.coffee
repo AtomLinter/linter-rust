@@ -165,7 +165,7 @@ buildCargoArguments = (linter, cargoManifestPath) ->
               .catch ->
                 result: false
       usingMultitoolForClippy.then (canUseMultirust) ->
-        if cargoCommand == 'clippy' and canUseMultirust.result
+        if (cargoCommand == 'clippy' or cargoCommand == 'clippy all') and canUseMultirust.result
           [canUseMultirust.tool, 'run', 'nightly', 'cargo']
         else
           [cargoPath]
@@ -175,12 +175,13 @@ buildCargoArguments = (linter, cargoManifestPath) ->
 
   cargoArgs = switch linter.cargoCommand
     when 'check' then ['check']
-    when 'check all' then ['check', '--all']
+    when 'check all' then ['check', '--all', '--all-targets']
     when 'check tests' then ['check', '--tests']
     when 'test' then ['test', '--no-run']
-    when 'test all' then ['test', '--no-run', '--all']
+    when 'test all' then ['test', '--no-run', '--all', '--all-targets']
     when 'rustc' then ['rustc', '--color', 'never']
     when 'clippy' then ['clippy']
+    when 'clippy all' then ['clippy', '--workspace', '--all-targets']
     else ['build']
 
   compilationFeatures = linter.compilationFeatures(true)
