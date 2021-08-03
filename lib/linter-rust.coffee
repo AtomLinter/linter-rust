@@ -76,8 +76,9 @@ class LinterRust
       cmdPath = if cmd[0]? then path.dirname cmd[0] else __dirname
       args = cmd.slice 1
       env.PATH = cmdPath + path.delimiter + env.PATH
-      cargoManifestFile = @locateCargo curDir
-      cargoManifestDir = path.dirname cargoManifestFile
+      editingDir = path.dirname textEditor.getPath()
+      cargoWorkspaceManifestFile = @locateCargoWorkspace editingDir
+      cargoCrateManifestFile = @locateCargoCrate editingDir
 
       # we set flags only for intermediate json support
       if errorMode == errorModes.FLAGS_JSON_CARGO
@@ -91,8 +92,14 @@ class LinterRust
         stream: 'both'
       execOpts.timeout = Infinity if @disableExecTimeout
 
-      atom_linter.exec(command, args, execOpts)
-        .then (result) =>
+      Promise.all [atom_linter.exec(command, args, execOpts), cargoWorkspaceManifestFile]
+        .then (promiseReturns)  ->
+          result = promiseReturns[0]
+          cargoWorkspaceManifestFile = promiseReturns[1]
+
+          cargoCrateManifestDir = path.dirname cargoCrateManifestFile
+          cargoWorkspaceManifestDir = path.dirname cargoWorkspaceManifestFile
+
           {stdout, stderr, exitCode} = result
           # first, check if an output says specified features are invalid
           if stderr.indexOf('does not have these features') >= 0
@@ -120,7 +127,8 @@ class LinterRust
             messages.forEach (message) ->
               if !(path.isAbsolute message.location.file)
                 message.location.file = path.join curDir, message.location.file if fs.existsSync path.join curDir, message.location.file
-                message.location.file = path.join cargoManifestDir, message.location.file if fs.existsSync path.join cargoManifestDir, message.location.file
+                message.location.file = path.join cargoCrateManifestDir, message.location.file if fs.existsSync path.join cargoCrateManifestDir, message.location.file
+                message.location.file = path.join cargoWorkspaceManifestDir, message.location.file if fs.existsSync path.join cargoWorkspaceManifestDir, message.location.file
             messages
           else
             # whoops, we're in trouble -- let's output as much as we can
@@ -141,15 +149,15 @@ class LinterRust
 
   initCmd: (editingFile) =>
     curDir = if editingFile? then path.dirname editingFile else __dirname
-    cargoManifestPath = @locateCargo curDir
-    if not @useCargo or not cargoManifestPath
-      @decideErrorMode(curDir, 'rustc').then (mode) =>
-        mode.buildArguments(this, [editingFile, cargoManifestPath]).then (cmd) ->
-          [cmd, mode]
-    else
-      @decideErrorMode(curDir, 'cargo').then (mode) =>
-        mode.buildArguments(this, cargoManifestPath).then (cmd) ->
-          [cmd, mode]
+    @locateCargo(curDir).then (cargoManifestPath) =>
+      if not @useCargo or not cargoManifestPath
+        @decideErrorMode(curDir, 'rustc').then (mode) =>
+          mode.buildArguments(this, [editingFile, cargoManifestPath]).then (cmd) ->
+            [cmd, mode]
+      else
+        @decideErrorMode(curDir, 'cargo').then (mode) =>
+          mode.buildArguments(this, cargoManifestPath).then (cmd) ->
+            [cmd, mode]
 
   compilationFeatures: (cargo) =>
     if @specifiedFeatures.length > 0
@@ -200,34 +208,34 @@ class LinterRust
         @cachedErrorMode = result
         result
 
-  locateCargo: (curDir) =>
+  locateCargoCrate: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
     directory = path.resolve curDir
-    manifest_name = @cargoManifestFilename
-
     loop
-      if fs.existsSync path.join directory, manifest_name
-        crate_level_manifest = path.join directory , manifest_name
-
-        if @useWorkspaceManifest
-          execOpts =
-            env: JSON.parse JSON.stringify process.env
-            cwd: curDir
-            stream: 'both'
-
-          atom_linter.exec('cargo', ['locate-project', '--workspace', '--manifest-path=' + crate_level_manifest], execOpts)
-            .then (result) =>
-              {stdout, stderr, exitCode} = result
-              json = JSON.parse stdout
-              return  json.root
-            .catch (error) ->
-              return crate_level_manifest
-        else
-          return crate_level_manifest
-
-      return path.join directory , manifest_name if fs.existsSync path.join directory, manifest_name
+      return path.join directory , @cargoManifestFilename if fs.existsSync path.join directory, @cargoManifestFilename
       break if root_dir.test directory
       directory = path.resolve path.join(directory, '..')
     return false
+
+  locateCargoWorkspace: (curDir) =>
+    crate_level_manifest = @locateCargoCrate(curDir)
+    if @useWorkspaceManifest and @useCargo
+      execOpts =
+        env: JSON.parse JSON.stringify process.env
+        cwd: curDir
+        stream: 'both'
+
+      return atom_linter.exec('cargo', ['locate-project', '--workspace', '--manifest-path=' + crate_level_manifest], execOpts)
+        .then (result) =>
+          {stdout, stderr, exitCode} = result
+          json = JSON.parse stdout
+          return  json.root
+        .catch (error) ->
+          return crate_level_manifest
+    else
+      return crate_level_manifest
+
+  locateCargo: (curDir) =>
+    return @locateCargoWorkspace curDir
 
 module.exports = LinterRust
