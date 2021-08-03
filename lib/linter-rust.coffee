@@ -32,6 +32,7 @@ class LinterRust
     @subscriptions.add atom.config.observe 'linter-rust.cargoCommand',
     (cargoCommand) =>
       @cargoCommand = cargoCommand
+      @useWorkspaceManifest = cargoCommand.endsWith('all')
 
     @subscriptions.add atom.config.observe 'linter-rust.rustcBuildTest',
     (rustcBuildTest) =>
@@ -75,6 +76,8 @@ class LinterRust
       cmdPath = if cmd[0]? then path.dirname cmd[0] else __dirname
       args = cmd.slice 1
       env.PATH = cmdPath + path.delimiter + env.PATH
+      cargoManifestFile = @locateCargo curDir
+      cargoManifestDir = path.dirname cargoManifestFile
 
       # we set flags only for intermediate json support
       if errorMode == errorModes.FLAGS_JSON_CARGO
@@ -116,7 +119,8 @@ class LinterRust
             # correct file paths
             messages.forEach (message) ->
               if !(path.isAbsolute message.location.file)
-                message.location.file = path.join curDir, message.location.file
+                message.location.file = path.join curDir, message.location.file if fs.existsSync path.join curDir, message.location.file
+                message.location.file = path.join cargoManifestDir, message.location.file if fs.existsSync path.join cargoManifestDir, message.location.file
             messages
           else
             # whoops, we're in trouble -- let's output as much as we can
@@ -199,8 +203,29 @@ class LinterRust
   locateCargo: (curDir) =>
     root_dir = if /^win/.test process.platform then /^.:\\$/ else /^\/$/
     directory = path.resolve curDir
+    manifest_name = @cargoManifestFilename
+
     loop
-      return path.join directory, @cargoManifestFilename if fs.existsSync path.join directory, @cargoManifestFilename
+      if fs.existsSync path.join directory, manifest_name
+        crate_level_manifest = path.join directory , manifest_name
+
+        if @useWorkspaceManifest
+          execOpts =
+            env: JSON.parse JSON.stringify process.env
+            cwd: curDir
+            stream: 'both'
+
+          atom_linter.exec('cargo', ['locate-project', '--workspace', '--manifest-path=' + crate_level_manifest], execOpts)
+            .then (result) =>
+              {stdout, stderr, exitCode} = result
+              json = JSON.parse stdout
+              return  json.root
+            .catch (error) ->
+              return crate_level_manifest
+        else
+          return crate_level_manifest
+
+      return path.join directory , manifest_name if fs.existsSync path.join directory, manifest_name
       break if root_dir.test directory
       directory = path.resolve path.join(directory, '..')
     return false
